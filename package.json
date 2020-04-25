@@ -1,0 +1,23 @@
+{
+  "name": "ssmgr-trojan-redis",
+  "version": "1.0.0",
+  "description": "ssmgr backend for trojan with redis auth",
+  "main": "dist/app.js",
+  "scripts": {
+    "start": "tsc && node dist/app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "llc1123",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^2.29.0",
+    "@typescript-eslint/parser": "^2.29.0",
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-prettier": "^3.1.3",
+    "prettier": "^2.0.5",
+    "tslint": "^6.1.1",
+    "typescript": "^3.8.3"
+  }
+}
