@@ -55,7 +55,7 @@ class TrojanClient {
       await this.cl.del('user:' + acctId.toString())
       return { acctId }
     } catch (e) {
-      throw new Error("Qeury error on 'del': " + e.message)
+      throw new Error("Query error on 'del': " + e.message)
     }
   }
 
@@ -64,22 +64,26 @@ class TrojanClient {
       acctId: number
       flow: number
     }
-    const result: AccountFlow[] = []
-    const accounts = await this.cl.keys('user:*')
-    await Promise.all(
-      accounts
-        .map((acctStr: string) => parseInt(acctStr.slice(5)))
-        .map(async (acctId: number) => {
-          const key = await this.cl.get('user:' + acctId)
-          let flow = 0
-          if (key) {
-            const [dl, ul] = await this.cl.hmget(key, 'download', 'upload')
-            flow = (dl ? parseInt(dl) || 0 : 0) + (ul ? parseInt(ul) || 0 : 0)
-          }
-          result.push({ acctId: acctId, flow: flow })
-        }),
-    )
-    return { flow: result }
+    try {
+      const result: AccountFlow[] = []
+      const accounts = await this.cl.keys('user:*')
+      await Promise.all(
+        accounts
+          .map((acctStr: string) => parseInt(acctStr.slice(5)))
+          .map(async (acctId: number) => {
+            const key = await this.cl.get('user:' + acctId)
+            let flow = 0
+            if (key) {
+              const [dl, ul] = await this.cl.hmget(key, 'download', 'upload')
+              flow = (dl ? parseInt(dl) || 0 : 0) + (ul ? parseInt(ul) || 0 : 0)
+            }
+            result.push({ acctId: acctId, flow: flow })
+          }),
+      )
+      return { flow: result }
+    } catch (e) {
+      throw new Error("Query error on 'flow': " + e.message)
+    }
   }
 }
 
