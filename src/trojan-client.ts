@@ -1,3 +1,6 @@
+import { createHash } from 'crypto'
+import { Redis } from 'ioredis'
+
 interface TrojanClientResult {
   acctId?: number
   flow?: {
@@ -9,32 +12,74 @@ interface TrojanClientResult {
 
 /**
  * Redis table structure:
- *  HSET acctId<number> password key<SHA224 string> download bytes<number> upload bytes<number>
+ *  HMSET key<SHA224 string> download bytes<number> upload bytes<number>
+ *  SET user:acctId<number> key<SHA224 string>
  */
+class TrojanClient {
+  private cl: Redis
 
-abstract class TrojanClient {
-  public static addAccount = async (
+  constructor(redisClient: Redis) {
+    this.cl = redisClient
+  }
+
+  public addAccount = async (
     acctId: number,
     password: string,
   ): Promise<TrojanClientResult> => {
-    // doSomething
-    return { acctId }
+    try {
+      let [dl, ul] = ['0', '0']
+      const currentKey = await this.cl.get('user:' + acctId.toString())
+      if (currentKey) {
+        const [td, tu] = await this.cl.hmget(currentKey, 'download', 'upload')
+        dl = td || '0'
+        ul = tu || '0'
+        await this.cl.del(currentKey)
+      }
+      const key = createHash('sha224').update(password, 'utf8').digest('hex')
+      await this.cl.set('user:' + acctId.toString(), key)
+      await this.cl.hmset(key, 'download', dl, 'upload', ul)
+      return { acctId }
+    } catch (e) {
+      throw new Error("Query error on 'add': " + e.message)
+    }
   }
 
-  public static removeAccount = async (
+  public removeAccount = async (
     acctId: number,
   ): Promise<TrojanClientResult> => {
-    // doSomething
-    return { acctId }
+    try {
+      const currentKey = await this.cl.get('user:' + acctId.toString())
+      if (currentKey) {
+        await this.cl.del(currentKey)
+      }
+      await this.cl.del('user:' + acctId.toString())
+      return { acctId }
+    } catch (e) {
+      throw new Error("Qeury error on 'del': " + e.message)
+    }
   }
 
-  public static getFlow = async (): Promise<TrojanClientResult> => {
-    // doSomething
-    return { flow: [] }
-  }
-
-  public static getVersion = (): TrojanClientResult => {
-    return { version: process.env.npm_package_version || 'unknown' }
+  public getFlow = async (): Promise<TrojanClientResult> => {
+    interface AccountFlow {
+      acctId: number
+      flow: number
+    }
+    const result: AccountFlow[] = []
+    const accounts = await this.cl.keys('user:*')
+    await Promise.all(
+      accounts
+        .map((acctStr: string) => parseInt(acctStr.slice(5)))
+        .map(async (acctId: number) => {
+          const key = await this.cl.get('user:' + acctId)
+          let flow = 0
+          if (key) {
+            const [dl, ul] = await this.cl.hmget(key, 'download', 'upload')
+            flow = (dl ? parseInt(dl) || 0 : 0) + (ul ? parseInt(ul) || 0 : 0)
+          }
+          result.push({ acctId: acctId, flow: flow })
+        }),
+    )
+    return { flow: result }
   }
 }
 

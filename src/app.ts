@@ -1,12 +1,10 @@
 import { Socket, createServer } from 'net'
 import { createHash } from 'crypto'
-import { getLogger } from 'log4js'
 import { program } from 'commander'
+import * as Redis from 'ioredis'
 
+import { logger } from './logger'
 import { TrojanClient, TrojanClientResult } from './trojan-client'
-
-const logger = getLogger()
-logger.level = 'debug'
 
 program
   .option('-d, --debug', 'default: false  verbose output for debug infomation ')
@@ -38,6 +36,14 @@ const config: Config = {
   redisAddr: program.redisServer?.split(':')[0] || 'localhost',
   redisPort: program.redisServer?.split(':')[1]?.parseInt() || 6379,
 }
+
+if (config.debug) {
+  logger.level = 'debug'
+}
+
+const trojanClient = new TrojanClient(
+  new Redis(config.redisPort, config.redisAddr),
+)
 
 /**
  * @param data command message buffer
@@ -85,13 +91,13 @@ const receiveCommand = async (data: Buffer): Promise<TrojanClientResult> => {
   logger.info('Message received: ' + JSON.stringify(message))
   switch (message.command) {
     case ECommand.Add:
-      return await TrojanClient.addAccount(message.acctId, message.password)
+      return await trojanClient.addAccount(message.acctId, message.password)
     case ECommand.Delete:
-      return await TrojanClient.removeAccount(message.acctId)
+      return await trojanClient.removeAccount(message.acctId)
     case ECommand.Flow:
-      return await TrojanClient.getFlow()
+      return await trojanClient.getFlow()
     case ECommand.Version:
-      return TrojanClient.getVersion()
+      return { version: process.env.npm_package_version }
     default:
       throw new Error('Invalid command')
   }
