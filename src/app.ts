@@ -1,11 +1,10 @@
 import { Socket, createServer } from 'net'
 import { createHash } from 'crypto'
-import { program } from 'commander'
 
 import { logger } from './logger'
 import { DBClient, initDB } from './db-client/db'
 import { parseConfig, Config } from './config'
-import { DBClientResult, ReceiveData, EDbType } from './types'
+import { DBClientResult, ReceiveData } from './types'
 
 let config: Config
 let dbClient: DBClient
@@ -153,9 +152,6 @@ const startServer = async (): Promise<void> => {
   config = parseConfig()
   if (config.debug) {
     logger.level = 'debug'
-  }
-  if (!program.key) {
-    logger.warn(`Password not specified. Using random password {${config.key}}`)
   }
 
   logger.debug(JSON.stringify(config))

@@ -1,5 +1,6 @@
 import { program } from 'commander'
 import { Config, EDbType } from './types'
+import { logger } from './logger'
 
 const parseConfig = (): Config => {
   program
@@ -27,11 +28,17 @@ const parseConfig = (): Config => {
     .option('--db-password <password>', 'default: none  database password', '')
     .parse(process.argv)
 
+  const key = program.key || Math.random().toString(36).substring(2, 15)
+
+  if (!program.key) {
+    logger.warn(`Password not specified. Using random password {${key}}`)
+  }
+
   return {
     debug: program.debug ? true : false,
     addr: program.listenAddress?.split(':')[0] || '0.0.0.0',
     port: parseInt(program.listenAddress?.split(':')[1], 10) || 4001,
-    key: program.key || Math.random().toString(36).substring(2, 15),
+    key: key,
     dbType: (program.dbType as EDbType) || EDbType.Redis,
     dbAddr: program.dbAddress?.split(':')[0] || 'localhost',
     dbPort:
