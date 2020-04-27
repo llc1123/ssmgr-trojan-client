@@ -222,7 +222,7 @@ const startServer = async (): Promise<void> => {
   if (!program.key) {
     logger.warn(`Password not specified. Using random password {${config.key}}`)
   }
-  console.log(JSON.stringify(config))
+  logger.debug(JSON.stringify(config))
 
   switch (config.dbType) {
     case EDbType.Redis:
