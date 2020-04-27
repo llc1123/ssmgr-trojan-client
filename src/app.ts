@@ -226,15 +226,20 @@ const startServer = async (): Promise<void> => {
 
   switch (config.dbType) {
     case EDbType.Redis:
-      const Redis = await import('ioredis')
-      const { RedisClient } = await import('./db-client/redis')
-      dbClient = new RedisClient(
-        new Redis({
-          port: config.dbPort,
-          host: config.dbAddr,
-          password: config.dbPassword,
-        }),
-      )
+      try {
+        const Redis = await import('ioredis')
+        const { RedisClient } = await import('./db-client/redis')
+        dbClient = new RedisClient(
+          new Redis({
+            port: config.dbPort,
+            host: config.dbAddr,
+            password: config.dbPassword,
+          }),
+        )
+      } catch (e) {
+        logger.error(e.message)
+        throw new Error()
+      }
   }
 
   server.listen(config.port, config.addr, () => {
@@ -242,4 +247,4 @@ const startServer = async (): Promise<void> => {
   })
 }
 
-startServer()
+startServer().catch(() => logger.error('FATAL ERROR. TERMINATED.'))
