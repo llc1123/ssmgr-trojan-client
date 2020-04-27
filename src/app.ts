@@ -3,77 +3,12 @@ import { createHash } from 'crypto'
 import { program } from 'commander'
 
 import { logger } from './logger'
-import { DBClient } from './db-client/db'
+import { DBClient, initDB } from './db-client/db'
+import { parseConfig, Config } from './config'
+import { DBClientResult, ReceiveData, EDbType } from './types'
 
-program
-  .option('-d, --debug', 'default: false  verbose output for debug infomation')
-  .option(
-    '-l, --listen-address <addr:port>',
-    'default: 0.0.0.0:4001  listening address for manager',
-    '0.0.0.0:4001',
-  )
-  .option('-k, --key <password>', 'ssmgr client password', '')
-  .option('--db-type', 'default: redis  database type (redis/mysql)', 'redis')
-  .option(
-    '--db-address <addr:port>',
-    'default: localhost:6379(redis)/localhost:3306(mysql)  database address',
-    'localhost',
-  )
-  .option(
-    '--db-user <username>',
-    'defualt: none(redis)/trojan(mysql)  database username',
-    '',
-  )
-  .option('--db-password <password>', 'default: none  database password', '')
-  .parse(process.argv)
-
-enum EDbType {
-  Redis = 'redis',
-  MySQL = 'mysql',
-}
-
-interface Config {
-  debug: boolean
-  addr: string
-  port: number
-  key: string
-  dbType: EDbType
-  dbAddr: string
-  dbPort: number
-  dbUser: string
-  dbPassword: string
-}
-
-const config: Config = {
-  debug: program.debug ? true : false,
-  addr: program.listenAddress?.split(':')[0] || '0.0.0.0',
-  port: parseInt(program.listenAddress?.split(':')[1], 10) || 4001,
-  key: program.key || Math.random().toString(36).substring(2, 15),
-  dbType: (program.dbType as EDbType) || EDbType.Redis,
-  dbAddr: program.dbAddress?.split(':')[0] || 'localhost',
-  dbPort:
-    parseInt(program.dbAddress?.split(':')[1], 10) ||
-    program.dbType === EDbType.MySQL
-      ? 3306
-      : 6379,
-  dbUser: program.dbUser || program.dbType === EDbType.MySQL ? 'trojan' : '',
-  dbPassword: program.dbPassword || '',
-}
-
-if (config.debug) {
-  logger.level = 'debug'
-}
-
+let config: Config
 let dbClient: DBClient
-
-export interface DBClientResult {
-  acctId?: number
-  flow?: {
-    acctId: number
-    flow: number
-  }[]
-  version?: string
-}
 
 /**
  * @param data command message buffer
@@ -131,11 +66,6 @@ const receiveCommand = async (data: Buffer): Promise<DBClientResult> => {
     default:
       throw new Error('Invalid command')
   }
-}
-
-interface ReceiveData {
-  data: Buffer
-  socket: Socket
 }
 
 const checkData = async (receive: ReceiveData): Promise<void> => {
@@ -219,28 +149,18 @@ const startServer = async (): Promise<void> => {
   logger.info(
     `ssmgr client for trojan-redis v${process.env.npm_package_version}`,
   )
+
+  config = parseConfig()
+  if (config.debug) {
+    logger.level = 'debug'
+  }
   if (!program.key) {
     logger.warn(`Password not specified. Using random password {${config.key}}`)
   }
+
   logger.debug(JSON.stringify(config))
 
-  switch (config.dbType) {
-    case EDbType.Redis:
-      try {
-        const Redis = await import('ioredis')
-        const { RedisClient } = await import('./db-client/redis')
-        dbClient = new RedisClient(
-          new Redis({
-            port: config.dbPort,
-            host: config.dbAddr,
-            password: config.dbPassword,
-          }),
-        )
-      } catch (e) {
-        logger.error(e.message)
-        throw new Error()
-      }
-  }
+  dbClient = await initDB(config)
 
   server.listen(config.port, config.addr, () => {
     logger.info(`Listening on ${config.addr}:${config.port}`)

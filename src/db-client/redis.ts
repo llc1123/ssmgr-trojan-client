@@ -1,6 +1,6 @@
 import { createHash } from 'crypto'
 import { Redis } from 'ioredis'
-import { DBClientResult } from '../app'
+import { DBClientResult } from '../types'
 import { DBClient } from './db'
 
 /**
