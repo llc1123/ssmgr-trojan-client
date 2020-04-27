@@ -64,20 +64,7 @@ if (config.debug) {
   logger.level = 'debug'
 }
 
-let trojanClient: DBClient
-
-switch (config.dbType) {
-  case EDbType.Redis:
-    const Redis = await import('ioredis')
-    const { RedisClient } = await import('./db-client/redis')
-    trojanClient = new RedisClient(
-      new Redis({
-        port: config.dbPort,
-        host: config.dbAddr,
-        password: config.dbPassword,
-      }),
-    )
-}
+let dbClient: DBClient
 
 export interface DBClientResult {
   acctId?: number
@@ -134,11 +121,11 @@ const receiveCommand = async (data: Buffer): Promise<DBClientResult> => {
   logger.info('Message received: ' + JSON.stringify(message))
   switch (message.command) {
     case ECommand.Add:
-      return await trojanClient.addAccount(message.acctId, message.password)
+      return await dbClient.addAccount(message.acctId, message.password)
     case ECommand.Delete:
-      return await trojanClient.removeAccount(message.acctId)
+      return await dbClient.removeAccount(message.acctId)
     case ECommand.Flow:
-      return await trojanClient.getFlow()
+      return await dbClient.getFlow()
     case ECommand.Version:
       return { version: process.env.npm_package_version }
     default:
@@ -228,7 +215,7 @@ const server = createServer((socket: Socket) => {
   logger.error('Socket error: ', err.message)
 })
 
-const startServer = (): void => {
+const startServer = async (): Promise<void> => {
   logger.info(
     `ssmgr client for trojan-redis v${process.env.npm_package_version}`,
   )
@@ -236,6 +223,20 @@ const startServer = (): void => {
     logger.warn(`Password not specified. Using random password {${config.key}}`)
   }
   console.log(JSON.stringify(config))
+
+  switch (config.dbType) {
+    case EDbType.Redis:
+      const Redis = await import('ioredis')
+      const { RedisClient } = await import('./db-client/redis')
+      dbClient = new RedisClient(
+        new Redis({
+          port: config.dbPort,
+          host: config.dbAddr,
+          password: config.dbPassword,
+        }),
+      )
+  }
+
   server.listen(config.port, config.addr, () => {
     logger.info(`Listening on ${config.addr}:${config.port}`)
   })
