@@ -1,31 +1,25 @@
 import { createHash } from 'crypto'
 import { Redis } from 'ioredis'
-
-interface TrojanClientResult {
-  acctId?: number
-  flow?: {
-    acctId: number
-    flow: number
-  }[]
-  version?: string
-}
+import { DBClientResult } from '../app'
+import { DBClient } from './db'
 
 /**
  * Redis table structure:
  *  HMSET key<SHA224 string> download bytes<number> upload bytes<number>
  *  SET user:acctId<number> key<SHA224 string>
  */
-class TrojanClient {
+class RedisClient extends DBClient {
   private cl: Redis
 
   constructor(redisClient: Redis) {
+    super()
     this.cl = redisClient
   }
 
   public addAccount = async (
     acctId: number,
     password: string,
-  ): Promise<TrojanClientResult> => {
+  ): Promise<DBClientResult> => {
     try {
       let [dl, ul] = ['0', '0']
       const currentKey = await this.cl.get('user:' + acctId.toString())
@@ -44,9 +38,7 @@ class TrojanClient {
     }
   }
 
-  public removeAccount = async (
-    acctId: number,
-  ): Promise<TrojanClientResult> => {
+  public removeAccount = async (acctId: number): Promise<DBClientResult> => {
     try {
       const currentKey = await this.cl.get('user:' + acctId.toString())
       if (currentKey) {
@@ -59,7 +51,7 @@ class TrojanClient {
     }
   }
 
-  public getFlow = async (): Promise<TrojanClientResult> => {
+  public getFlow = async (): Promise<DBClientResult> => {
     interface AccountFlow {
       acctId: number
       flow: number
@@ -87,4 +79,4 @@ class TrojanClient {
   }
 }
 
-export { TrojanClient, TrojanClientResult }
+export { RedisClient }

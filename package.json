@@ -1,7 +1,7 @@
 {
-  "name": "ssmgr-trojan-redis",
+  "name": "ssmgr-trojan-client",
   "version": "1.0.0",
-  "description": "ssmgr backend for trojan with redis auth",
+  "description": "ssmgr client for trojan",
   "main": "dist/app.js",
   "scripts": {
     "start": "tsc && node dist/app.js",
@@ -9,14 +9,13 @@
   },
   "author": "llc1123",
   "license": "MIT",
-  "repository": "https://github.com/llc1123/ssmgr-trojan-redis",
+  "repository": "https://github.com/llc1123/ssmgr-trojan-client",
   "dependencies": {
-    "@types/ioredis": "^4.14.9",
     "commander": "^5.1.0",
-    "ioredis": "^4.16.3",
     "log4js": "^6.2.1"
   },
   "devDependencies": {
+    "@types/ioredis": "^4.14.9",
     "@types/node": "^13.13.2",
     "@typescript-eslint/eslint-plugin": "^2.29.0",
     "@typescript-eslint/parser": "^2.29.0",
@@ -26,5 +25,8 @@
     "prettier": "^2.0.5",
     "tslint": "^6.1.1",
     "typescript": "^3.8.3"
+  },
+  "peerDependencies": {
+    "ioredis": "^4.16.3"
   }
 }
