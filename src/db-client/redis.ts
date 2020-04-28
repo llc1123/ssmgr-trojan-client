@@ -67,7 +67,11 @@ class RedisClient extends DBClient {
             let flow = 0
             if (key) {
               const [dl, ul] = await this.cl.hmget(key, 'download', 'upload')
-              flow = (dl ? parseInt(dl) || 0 : 0) + (ul ? parseInt(ul) || 0 : 0)
+              await this.cl.hincrby(key, 'download', -parseInt(dl || '0', 10))
+              await this.cl.hincrby(key, 'upload', -parseInt(ul || '0', 10))
+              flow =
+                (dl ? parseInt(dl, 10) || 0 : 0) +
+                (ul ? parseInt(ul, 10) || 0 : 0)
             }
             result.push({ acctId: acctId, flow: flow })
           }),

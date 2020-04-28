@@ -145,9 +145,7 @@ const server = createServer((socket: Socket) => {
 })
 
 const startServer = async (): Promise<void> => {
-  logger.info(
-    `ssmgr client for trojan-redis v${process.env.npm_package_version}`,
-  )
+  logger.info(`ssmgr client for trojan v${process.env.npm_package_version}`)
 
   config = parseConfig()
   if (config.debug) {
