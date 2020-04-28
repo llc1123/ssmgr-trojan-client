@@ -12,7 +12,8 @@
   "repository": "https://github.com/llc1123/ssmgr-trojan-client",
   "dependencies": {
     "commander": "^5.1.0",
-    "log4js": "^6.2.1"
+    "log4js": "^6.2.1",
+    "ioredis": "^4.16.3"
   },
   "devDependencies": {
     "@types/ioredis": "^4.14.9",
@@ -25,8 +26,5 @@
     "prettier": "^2.0.5",
     "tslint": "^6.1.1",
     "typescript": "^3.8.3"
-  },
-  "peerDependencies": {
-    "ioredis": "^4.16.3"
   }
 }

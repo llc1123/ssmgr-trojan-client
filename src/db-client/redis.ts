@@ -2,6 +2,7 @@ import { createHash } from 'crypto'
 import { Redis } from 'ioredis'
 import { DBClientResult } from '../types'
 import { DBClient } from './db'
+import { logger } from '../logger'
 
 /**
  * Redis table structure:
@@ -20,8 +21,12 @@ class RedisClient extends DBClient {
     acctId: number,
     password: string,
   ): Promise<DBClientResult> => {
+    const key = createHash('sha224').update(password, 'utf8').digest('hex')
+    let [dl, ul] = ['0', '0']
     try {
-      let [dl, ul] = ['0', '0']
+      if (await this.cl.exists(key)) {
+        throw new Error('password exists')
+      }
       const currentKey = await this.cl.get('user:' + acctId.toString())
       if (currentKey) {
         const [td, tu] = await this.cl.hmget(currentKey, 'download', 'upload')
@@ -29,9 +34,9 @@ class RedisClient extends DBClient {
         ul = tu || '0'
         await this.cl.del(currentKey)
       }
-      const key = createHash('sha224').update(password, 'utf8').digest('hex')
       await this.cl.set('user:' + acctId.toString(), key)
       await this.cl.hmset(key, { download: dl, upload: ul })
+      logger.debug('Added user: ' + acctId)
       return { acctId }
     } catch (e) {
       throw new Error("Query error on 'add': " + e.message)
@@ -45,6 +50,7 @@ class RedisClient extends DBClient {
         await this.cl.del(currentKey)
       }
       await this.cl.del('user:' + acctId.toString())
+      logger.debug('Removed user: ' + acctId)
       return { acctId }
     } catch (e) {
       throw new Error("Query error on 'del': " + e.message)
@@ -76,10 +82,15 @@ class RedisClient extends DBClient {
             result.push({ acctId: acctId, flow: flow })
           }),
       )
+      logger.debug('Flow: ' + JSON.stringify(result))
       return { flow: result }
     } catch (e) {
       throw new Error("Query error on 'flow': " + e.message)
     }
+  }
+
+  public disconnect = (): void => {
+    this.cl.disconnect()
   }
 }
 

@@ -14,6 +14,8 @@ abstract class DBClient {
   public abstract removeAccount(acctId: number): Promise<DBClientResult>
 
   public abstract getFlow(): Promise<DBClientResult>
+
+  public abstract disconnect(): void
 }
 
 const initDB = async (config: Config): Promise<DBClient> => {
