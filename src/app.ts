@@ -151,7 +151,6 @@ const startServer = async (): Promise<void> => {
   if (config.debug) {
     logger.level = 'debug'
   }
-
   logger.debug(JSON.stringify(config))
 
   dbClient = await initDB(config)

@@ -24,13 +24,17 @@ const initDB = async (config: Config): Promise<DBClient> => {
       try {
         const Redis = await import('ioredis')
         const { RedisClient } = await import('./redis')
-        return new RedisClient(
+        const cl = new RedisClient(
           new Redis({
             port: config.dbPort,
             host: config.dbAddr,
             password: config.dbPassword,
           }),
         )
+        logger.info(
+          `Running in Redis mode. Connected to ${config.dbAddr}:${config.dbPort}`,
+        )
+        return cl
       } catch (e) {
         logger.error(e.message)
         throw new Error()
