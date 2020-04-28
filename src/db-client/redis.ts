@@ -31,7 +31,7 @@ class RedisClient extends DBClient {
       }
       const key = createHash('sha224').update(password, 'utf8').digest('hex')
       await this.cl.set('user:' + acctId.toString(), key)
-      await this.cl.hmset(key, 'download', dl, 'upload', ul)
+      await this.cl.hmset(key, { download: dl, upload: ul })
       return { acctId }
     } catch (e) {
       throw new Error("Query error on 'add': " + e.message)
@@ -61,7 +61,7 @@ class RedisClient extends DBClient {
       const accounts = await this.cl.keys('user:*')
       await Promise.all(
         accounts
-          .map((acctStr: string) => parseInt(acctStr.slice(5)))
+          .map((acctStr: string) => parseInt(acctStr.slice(5), 10))
           .map(async (acctId: number) => {
             const key = await this.cl.get('user:' + acctId)
             let flow = 0
