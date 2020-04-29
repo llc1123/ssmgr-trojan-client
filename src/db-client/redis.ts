@@ -36,7 +36,7 @@ class RedisClient extends DBClient {
       }
       await this.cl.set('user:' + acctId.toString(), key)
       await this.cl.hmset(key, { download: dl, upload: ul })
-      logger.debug('Added user: ' + acctId)
+      logger.debug(`Added user: ${acctId}`)
       return { acctId }
     } catch (e) {
       throw new Error("Query error on 'add': " + e.message)
@@ -50,7 +50,7 @@ class RedisClient extends DBClient {
         await this.cl.del(currentKey)
       }
       await this.cl.del('user:' + acctId.toString())
-      logger.debug('Removed user: ' + acctId)
+      logger.debug(`Removed user: ${acctId}`)
       return { acctId }
     } catch (e) {
       throw new Error("Query error on 'del': " + e.message)

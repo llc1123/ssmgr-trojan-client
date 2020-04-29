@@ -39,6 +39,26 @@ const initDB = async (config: Config): Promise<DBClient> => {
         logger.error(e.message)
         throw new Error()
       }
+    case EDbType.MySQL:
+      try {
+        const MySQL = await import('promise-mysql')
+        const { MySQLClient } = await import('./mysql')
+        const cl = new MySQLClient(
+          await MySQL.createConnection({
+            host: config.dbAddr,
+            port: config.dbPort,
+            user: config.dbUser,
+            password: config.dbPassword,
+          }),
+        )
+        logger.info(
+          `Running in MySQL mode. Connected to ${config.dbAddr}:${config.dbPort}`,
+        )
+        return cl
+      } catch (e) {
+        logger.error(e.message)
+        throw new Error()
+      }
     default:
       logger.error(`Database ${config.dbType} not supported.`)
       throw new Error()
