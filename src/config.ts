@@ -14,7 +14,11 @@ const parseConfig = (): Config => {
       '0.0.0.0:4001',
     )
     .option('-k, --key <password>', 'ssmgr client password', '')
-    .option('--db-type', 'default: redis  database type (redis/mysql)', 'redis')
+    .option(
+      '--db-type <type>',
+      'default: redis  database type (redis/mysql)',
+      'redis',
+    )
     .option(
       '--db-address <addr:port>',
       'default: localhost:6379(redis)/localhost:3306(mysql)  database address',

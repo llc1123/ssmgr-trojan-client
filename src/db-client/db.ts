@@ -40,7 +40,7 @@ const initDB = async (config: Config): Promise<DBClient> => {
         throw new Error()
       }
     default:
-      logger.error('Database not supported')
+      logger.error(`Database ${config.dbType} not supported.`)
       throw new Error()
   }
 }
