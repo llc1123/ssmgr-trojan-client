@@ -9,8 +9,8 @@ Options:
   -k, --key <password>              ssmgr client password
   --db-type <type>                  database type (redis/mysql) (default: redis)
   --db-address <addr:port>          database address (default: localhost:6379(redis)/localhost:3306(mysql))
-  --db-name <database>              database name  (default: trojan)
-  --db-user <username>              database username (defualt: trojan(mysql))
+  --db-name <database>              (mysql only) database name (default: trojan)
+  --db-user <username>              (mysql only) database username (defualt: trojan)
   --db-password <password>          database password (default: none)
   -h, --help                        display help for command
 ```
