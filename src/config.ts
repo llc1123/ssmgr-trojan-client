@@ -24,6 +24,7 @@ const parseConfig = (): Config => {
       'default: localhost:6379(redis)/localhost:3306(mysql)  database address',
       'localhost',
     )
+    .option('--db-name <database>', 'default: trojan  database name', 'trojan')
     .option(
       '--db-user <username>',
       'defualt: none(redis)/trojan(mysql)  database username',
@@ -50,6 +51,7 @@ const parseConfig = (): Config => {
       program.dbType === EDbType.MySQL
         ? 3306
         : 6379,
+    dbName: program.dbName || 'trojan',
     dbUser: program.dbUser || program.dbType === EDbType.MySQL ? 'trojan' : '',
     dbPassword: program.dbPassword || '',
   }

@@ -27,6 +27,7 @@ export interface Config {
   dbType: EDbType
   dbAddr: string
   dbPort: number
+  dbName: string
   dbUser: string
   dbPassword: string
 }
