@@ -15,6 +15,12 @@ interface OkPacket {
   changedRows: number
 }
 
+interface UserFlow {
+  id: number
+  download: number
+  upload: number
+}
+
 /**
  * MySQL table structure (minimal table required by trojan-gfw):
  *   CREATE TABLE users (
@@ -82,11 +88,24 @@ class MySQLClient extends DBClient {
 
   public getFlow = async (): Promise<DBClientResult> => {
     try {
-      const result: { acctId: number; flow: number }[] = await this.cl.query(
-        'SELECT `id` AS `acctId`, (upload+download) AS `flow` FROM `users`',
+      const result: UserFlow[] = await this.cl.query(
+        'SELECT `id`, `upload`, `download` FROM `users`',
+      )
+      await Promise.all(
+        result.map((userFlow: UserFlow) =>
+          this.cl.query(
+            'UPDATE `users` SET `upload` = `upload` - ?, `download` = `download` - ? WHERE `id` = ?',
+            [userFlow.upload, userFlow.download, userFlow.id],
+          ),
+        ),
       )
       logger.debug(`Flow: ${JSON.stringify(result)}`)
-      return { flow: result }
+      return {
+        flow: result.map((userFlow) => ({
+          acctId: userFlow.id,
+          flow: userFlow.upload + userFlow.download,
+        })),
+      }
     } catch (e) {
       throw new Error("Query error on 'flow': " + e.message)
     }
