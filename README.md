@@ -1,7 +1,5 @@
 # ssmgr-trojan-client
 
-------
-
 ```
 Usage: ssmgr-trojan-client [options]
 
