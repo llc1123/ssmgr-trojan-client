@@ -9,10 +9,32 @@ import { DBClientResult, ReceiveData } from './types'
 let config: Config
 let dbClient: DBClient
 
+const toSsmgrResult = (data: DBClientResult, type: String): any => {
+  switch (type) {
+    case 'list':
+      return data.list ? data.list.map(m => {
+        return { port: m.acctId, password: m.password }
+      }) : []
+    case 'add':
+      return { port: data.acctId }
+    case 'del':
+      return { port: data.acctId }
+    case 'flow':
+      return data.flow
+    case 'version':
+      return data
+    default:
+      throw new Error('Invalid command')
+  }
+}
+
 /**
  * @param data command message buffer
  *
  * Supported commands:
+ *  list ()
+ *  return type:
+ *      { flow: [{ acctId: <number>, password: <string> }, ...] }
  *  add (acctId<number>, password<string>)
  *    Attention: Based on trojan protocol, passwords must be unique.
  *    Passwords are stored in redis in SHA224 encoding (Don't pass encoded passwords).
@@ -35,6 +57,7 @@ let dbClient: DBClient
  */
 const receiveCommand = async (data: Buffer): Promise<DBClientResult> => {
   enum ECommand {
+    List = 'list',
     Add = 'add',
     Delete = 'del',
     Flow = 'flow',
@@ -42,7 +65,7 @@ const receiveCommand = async (data: Buffer): Promise<DBClientResult> => {
   }
   interface CommandMessage {
     command: ECommand
-    acctId: number
+    port: number
     password: string
   }
 
@@ -54,16 +77,18 @@ const receiveCommand = async (data: Buffer): Promise<DBClientResult> => {
   }
   logger.info('Message received: ' + JSON.stringify(message))
   switch (message.command) {
+    case ECommand.List:
+      return toSsmgrResult(await dbClient.listAccount(), message.command)
     case ECommand.Add:
-      return await dbClient.addAccount(message.acctId, message.password)
+      return toSsmgrResult(await dbClient.addAccount(message.port, message.password), message.command)
     case ECommand.Delete:
-      return await dbClient.removeAccount(message.acctId)
+      return toSsmgrResult(await dbClient.removeAccount(message.port), message.command)
     case ECommand.Flow:
-      return await dbClient.getFlow()
+      return toSsmgrResult(await dbClient.getFlow(), message.command)
     case ECommand.Version:
       return { version: process.env.npm_package_version }
     default:
-      throw new Error('Invalid command')
+      throw new Error('Invalid command' + message.command)
   }
 }
 
@@ -76,8 +101,8 @@ const checkData = async (receive: ReceiveData): Promise<void> => {
   const pack = (data: PackData): Buffer => {
     const message = JSON.stringify(data)
     const dataBuffer = Buffer.from(message)
-    const length = dataBuffer.length
-    const lengthBuffer = Buffer.from(length.toString(16).padStart(8), 'hex')
+    const length = dataBuffer.length;
+    const lengthBuffer = Buffer.from(('0000000000000000' + length.toString(16)).substr(-8), 'hex')
     const pack = Buffer.concat([lengthBuffer, dataBuffer])
     return pack
   }

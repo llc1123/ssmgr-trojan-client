@@ -6,6 +6,10 @@ export interface DBClientResult {
     acctId: number
     flow: number
   }[]
+  list?: {
+    acctId: number
+    password: string
+  }[]
   version?: string
 }
 

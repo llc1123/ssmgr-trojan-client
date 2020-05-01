@@ -17,6 +17,11 @@ class RedisClient extends DBClient {
     this.cl = redisClient
   }
 
+  public listAccount = async (): Promise<DBClientResult> => {
+    let [dl, ul] = ['0', '0']
+    return { list: [] }
+  }
+
   public addAccount = async (
     acctId: number,
     password: string,

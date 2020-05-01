@@ -41,12 +41,26 @@ class MySQLClient extends DBClient {
     this.cl = mysqlClient
   }
 
+  public listAccount = async (): Promise<DBClientResult> => {
+    try {
+      const dup: { id: number, password: string }[] = await this.cl.query(
+        'SELECT id, password FROM `users`',
+      )
+      const accts = dup.map(d => {
+        return { acctId: d.id, password: d.password }
+      });
+      return { list: accts };
+    } catch (e) {
+      throw new Error("Query error on 'add': " + e.message)
+    }
+  }
+
   public addAccount = async (
     acctId: number,
     password: string,
   ): Promise<DBClientResult> => {
     try {
-      const key = createHash('sha224').update(password, 'utf8').digest('hex')
+      const key = createHash('sha224').update(acctId + ':' + password, 'utf8').digest('hex')
       const dup: { id: number }[] = await this.cl.query(
         'SELECT id FROM `users` WHERE `password` = ?',
         key,
