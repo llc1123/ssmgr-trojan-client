@@ -4,10 +4,12 @@ jobs:
   build:
     strategy:
       matrix:
-        node-version: [12.x, 13.x, 14.x]
-        platform: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [14.x]
+        platform: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
     steps:
+    - name: Set git to use LF
+      run: git config --global core.autocrlf false
     - name: Checkout code
       uses: actions/checkout@v2
     - name: Use Node.js ${{ matrix.node-version }}
