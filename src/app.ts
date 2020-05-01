@@ -5,6 +5,7 @@ import { logger } from './logger'
 import { DBClient, initDB } from './db-client/db'
 import { parseConfig, Config } from './config'
 import { DBClientResult, ReceiveData } from './types'
+import { version } from './version'
 
 let config: Config
 let dbClient: DBClient
@@ -86,7 +87,7 @@ const receiveCommand = async (data: Buffer): Promise<DBClientResult> => {
     case ECommand.Flow:
       return toSsmgrResult(await dbClient.getFlow(), message.command)
     case ECommand.Version:
-      return { version: process.env.npm_package_version }
+      return { version: version }
     default:
       throw new Error('Invalid command' + message.command)
   }
@@ -170,7 +171,7 @@ const server = createServer((socket: Socket) => {
 })
 
 const startServer = async (): Promise<void> => {
-  logger.info(`ssmgr client for trojan v${process.env.npm_package_version}`)
+  logger.info(`ssmgr client for trojan v${version}`)
 
   config = parseConfig()
   if (config.debug) {
