@@ -2,7 +2,7 @@
 
 A [shadowsocks-manager](https://github.com/shadowsocks/shadowsocks-manager) s-node for trojan-gfw. If you know how to use trojan and shadowsocks-manager, you know what this does.
 
-Support multiple variants of trojan. Including [p4gefau1t/trojan-go](https://github.com/p4gefau1t/trojan-go), [trojan-gfw/trojan](https://github.com/trojan-gfw/trojan), and others.
+Support multiple variants of trojan. Including [p4gefau1t/trojan-go](https://github.com/p4gefau1t/trojan-go), [trojan-gfw/trojan](https://github.com/trojan-gfw/trojan), [DenrianWeiss/trojan-cluster](https://github.com/DenrianWeiss/trojan-cluster) and others.
 
 ## Installation
 ```
