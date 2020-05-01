@@ -7,7 +7,8 @@
     "ssmgr-trojan-client": "./bin/ssmgr-trojan-client"
   },
   "scripts": {
-    "build": "tsc",
+    "lint": "eslint src --ext .ts",
+    "build": "eslint src --ext .ts && tsc",
     "start": "tsc && node dist/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
