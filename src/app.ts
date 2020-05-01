@@ -4,66 +4,49 @@ import { createHash } from 'crypto'
 import { logger } from './logger'
 import { DBClient, initDB } from './db-client/db'
 import { parseConfig, Config } from './config'
-import { DBClientResult, ReceiveData } from './types'
+import {
+  DBClientResult,
+  ReceiveData,
+  ECommand,
+  UserFlow,
+  UserIdPwd,
+  UserData,
+  ParsedResult,
+} from './types'
 import { version } from './version'
 
 let config: Config
 let dbClient: DBClient
-
-const toSsmgrResult = (data: DBClientResult, type: String): any => {
-  switch (type) {
-    case 'list':
-      return data.list ? data.list.map(m => {
-        return { port: m.acctId, password: m.password }
-      }) : []
-    case 'add':
-      return { port: data.acctId }
-    case 'del':
-      return { port: data.acctId }
-    case 'flow':
-      return data.flow
-    case 'version':
-      return data
-    default:
-      throw new Error('Invalid command')
-  }
-}
 
 /**
  * @param data command message buffer
  *
  * Supported commands:
  *  list ()
- *  return type:
- *      { flow: [{ acctId: <number>, password: <string> }, ...] }
+ *    List current users and encoded passwords
+ *    return type:
+ *      { type: 'list', data: [{ acctId: <number>, data: password<string> }, ...] }
  *  add (acctId<number>, password<string>)
  *    Attention: Based on trojan protocol, passwords must be unique.
  *    Passwords are stored in redis in SHA224 encoding (Don't pass encoded passwords).
  *    Use this method if you want to change password.
  *    return type:
- *      { acctId: <number> }
+ *      { type: 'add', data: acctId<number> }
  *  del (acctId<number>)
  *    Deletes an account by the given account ID
  *    return type:
- *      { acctId: <number> }
+ *      { type: 'del', data: acctId<number> }
  *  flow ()
  *    Returns flow data of all accounts since last flow query (including ones having no flow).
  *    It also lets you check active accounts. (In case redis has been wiped)
  *    return type:
- *      { flow: [{ acctId: <number>, flow: <number> }, ...] }
+ *      { type: 'flow', data: [{ acctId: <number>, data: flow<number> }, ...] }
  *  version ()
  *    Returns the version of this client.
  *    return type:
- *      { version: <string> }
+ *      { type: 'version', data: version<string> }
  */
 const receiveCommand = async (data: Buffer): Promise<DBClientResult> => {
-  enum ECommand {
-    List = 'list',
-    Add = 'add',
-    Delete = 'del',
-    Flow = 'flow',
-    Version = 'version',
-  }
   interface CommandMessage {
     command: ECommand
     port: number
@@ -79,31 +62,76 @@ const receiveCommand = async (data: Buffer): Promise<DBClientResult> => {
   logger.info('Message received: ' + JSON.stringify(message))
   switch (message.command) {
     case ECommand.List:
-      return toSsmgrResult(await dbClient.listAccount(), message.command)
+      return await dbClient.listAccounts()
     case ECommand.Add:
-      return toSsmgrResult(await dbClient.addAccount(message.port, message.password), message.command)
+      return await dbClient.addAccount(message.port, message.password)
     case ECommand.Delete:
-      return toSsmgrResult(await dbClient.removeAccount(message.port), message.command)
+      return await dbClient.removeAccount(message.port)
     case ECommand.Flow:
-      return toSsmgrResult(await dbClient.getFlow(), message.command)
+      return await dbClient.getFlow()
     case ECommand.Version:
-      return { version: version }
+      return { type: ECommand.Version, data: version }
     default:
-      throw new Error('Invalid command' + message.command)
+      throw new Error('Invalid command: ' + message.command)
+  }
+}
+
+const parseResult = (result: DBClientResult): ParsedResult => {
+  switch (result.type) {
+    case ECommand.List:
+      if (typeof result.data === 'object') {
+        return result.data.map(
+          (user: UserData): UserIdPwd => ({
+            port: user.acctId,
+            password: user.data,
+          }),
+        )
+      }
+      throw new Error("Invalid data for command 'list'")
+    case ECommand.Add:
+      if (typeof result.data === 'number') {
+        return { port: result.data }
+      }
+      throw new Error("Invalid data for command 'add'")
+    case ECommand.Delete:
+      if (typeof result.data === 'number') {
+        return { port: result.data }
+      }
+      throw new Error("Invalid data for command 'del'")
+    case ECommand.Flow:
+      if (typeof result.data === 'object') {
+        return result.data.map(
+          (user: UserData): UserFlow => ({
+            port: user.acctId,
+            flow: parseInt(user.data, 10),
+          }),
+        )
+      }
+      throw new Error("Invalid data for command 'flow'")
+    case ECommand.Version:
+      if (typeof result.data === 'string') {
+        return result.data
+      }
+      throw new Error("Invalid data for command 'version'")
+    default:
+      throw new Error('Invalid command')
   }
 }
 
 const checkData = async (receive: ReceiveData): Promise<void> => {
   interface PackData {
     code: number
-    data?: DBClientResult
+    data?: ParsedResult
   }
 
   const pack = (data: PackData): Buffer => {
     const message = JSON.stringify(data)
     const dataBuffer = Buffer.from(message)
-    const length = dataBuffer.length;
-    const lengthBuffer = Buffer.from(('0000000000000000' + length.toString(16)).substr(-8), 'hex')
+    const length = dataBuffer.length
+    const lengthBuffer = Buffer.from(
+      length.toString(16).padStart(8, '0'),
+      'hex',
+    )
     const pack = Buffer.concat([lengthBuffer, dataBuffer])
     return pack
   }
@@ -143,7 +171,7 @@ const checkData = async (receive: ReceiveData): Promise<void> => {
       return
     }
     try {
-      const result = await receiveCommand(data)
+      const result = parseResult(await receiveCommand(data))
       receive.socket.end(pack({ code: 0, data: result }))
     } catch (err) {
       logger.error(err.message)

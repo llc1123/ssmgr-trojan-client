@@ -6,7 +6,7 @@ import { logger } from '../logger'
  * Database Client Abstract Class
  */
 abstract class DBClient {
-  public abstract listAccount(): Promise<DBClientResult>
+  public abstract listAccounts(): Promise<DBClientResult>
 
   public abstract addAccount(
     acctId: number,
@@ -49,7 +49,7 @@ const initDB = async (config: Config): Promise<DBClient> => {
           await MySQL.createConnection({
             host: config.dbAddr,
             port: config.dbPort,
-            user: 'root',
+            user: config.dbUser,
             password: config.dbPassword,
             database: config.dbName,
             debug: config.debug,

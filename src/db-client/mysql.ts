@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import { DBClientResult } from '../types'
+import { DBClientResult, ECommand, UserData } from '../types'
 import { DBClient } from './db'
 import { logger } from '../logger'
 import { Connection } from 'promise-mysql'
@@ -13,12 +13,6 @@ interface OkPacket {
   message: string
   protocol41: boolean
   changedRows: number
-}
-
-interface UserFlow {
-  id: number
-  download: number
-  upload: number
 }
 
 /**
@@ -41,17 +35,14 @@ class MySQLClient extends DBClient {
     this.cl = mysqlClient
   }
 
-  public listAccount = async (): Promise<DBClientResult> => {
+  public listAccounts = async (): Promise<DBClientResult> => {
     try {
-      const dup: { id: number, password: string }[] = await this.cl.query(
-        'SELECT id, password FROM `users`',
+      const accts: UserData[] = await this.cl.query(
+        'SELECT `id` AS `acctId`, `password` AS `data` FROM `users`',
       )
-      const accts = dup.map(d => {
-        return { acctId: d.id, password: d.password }
-      });
-      return { list: accts };
+      return { type: ECommand.List, data: accts }
     } catch (e) {
-      throw new Error("Query error on 'add': " + e.message)
+      throw new Error("Query error on 'list': " + e.message)
     }
   }
 
@@ -60,14 +51,16 @@ class MySQLClient extends DBClient {
     password: string,
   ): Promise<DBClientResult> => {
     try {
-      const key = createHash('sha224').update(acctId + ':' + password, 'utf8').digest('hex')
+      const key = createHash('sha224')
+        .update(`${acctId.toString()}:${password}`, 'utf8')
+        .digest('hex')
       const dup: { id: number }[] = await this.cl.query(
-        'SELECT id FROM `users` WHERE `password` = ?',
+        'SELECT `id` FROM `users` WHERE `password` = ?',
         key,
       )
       if (dup.length !== 0) {
         if (dup[0].id === acctId) {
-          return { acctId }
+          return { type: ECommand.Add, data: acctId }
         } else {
           throw new Error('duplicate password.')
         }
@@ -76,7 +69,7 @@ class MySQLClient extends DBClient {
           'INSERT INTO `users` VALUES(?, ?, -1, 0, 0) ON DUPLICATE KEY UPDATE `password` = ?',
           [acctId, key, key],
         )
-        return { acctId }
+        return { type: ECommand.Add, data: acctId }
       }
     } catch (e) {
       throw new Error("Query error on 'add': " + e.message)
@@ -91,7 +84,7 @@ class MySQLClient extends DBClient {
       )
       if (result.affectedRows === 1) {
         logger.debug(`Removed user: ${acctId}`)
-        return { acctId }
+        return { type: ECommand.Delete, data: acctId }
       } else {
         throw new Error(`user id ${acctId} does not exist.`)
       }
@@ -101,24 +94,33 @@ class MySQLClient extends DBClient {
   }
 
   public getFlow = async (): Promise<DBClientResult> => {
+    interface UserUlDl {
+      id: number
+      upload: number
+      download: number
+    }
+
     try {
-      const result: UserFlow[] = await this.cl.query(
+      const result: UserUlDl[] = await this.cl.query(
         'SELECT `id`, `upload`, `download` FROM `users`',
       )
       await Promise.all(
-        result.map((userFlow: UserFlow) =>
+        result.map((userUlDl: UserUlDl): void => {
           this.cl.query(
             'UPDATE `users` SET `upload` = `upload` - ?, `download` = `download` - ? WHERE `id` = ?',
-            [userFlow.upload, userFlow.download, userFlow.id],
-          ),
-        ),
+            [userUlDl.upload, userUlDl.download, userUlDl.id],
+          )
+        }),
       )
       logger.debug(`Flow: ${JSON.stringify(result)}`)
       return {
-        flow: result.map((userFlow) => ({
-          acctId: userFlow.id,
-          flow: userFlow.upload + userFlow.download,
-        })),
+        type: ECommand.Flow,
+        data: result.map(
+          (userFlow: UserUlDl): UserData => ({
+            acctId: userFlow.id,
+            data: (userFlow.upload + userFlow.download).toString(),
+          }),
+        ),
       }
     } catch (e) {
       throw new Error("Query error on 'flow': " + e.message)
