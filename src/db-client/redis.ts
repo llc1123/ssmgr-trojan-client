@@ -1,6 +1,6 @@
 import { createHash } from 'crypto'
 import { Redis } from 'ioredis'
-import { DBClientResult } from '../types'
+import { DBClientResult, ECommand, UserData } from '../types'
 import { DBClient } from './db'
 import { logger } from '../logger'
 
@@ -17,20 +17,34 @@ class RedisClient extends DBClient {
     this.cl = redisClient
   }
 
-  public listAccount = async (): Promise<DBClientResult> => {
-    let [dl, ul] = ['0', '0']
-    return { list: [] }
+  public listAccounts = async (): Promise<DBClientResult> => {
+    try {
+      const accounts = await this.cl.keys('user:*')
+      const result = await Promise.all(
+        accounts.map(
+          async (user: string): Promise<UserData> => ({
+            acctId: parseInt(user.slice(5), 10),
+            data: (await this.cl.get(user)) || '',
+          }),
+        ),
+      )
+      return { type: ECommand.List, data: result }
+    } catch (e) {
+      throw new Error("Query error on 'list': " + e.message)
+    }
   }
 
   public addAccount = async (
     acctId: number,
     password: string,
   ): Promise<DBClientResult> => {
-    const key = createHash('sha224').update(password, 'utf8').digest('hex')
+    const key = createHash('sha224')
+      .update(`${acctId.toString()}:${password}`, 'utf8')
+      .digest('hex')
     let [dl, ul] = ['0', '0']
     try {
       if (await this.cl.exists(key)) {
-        throw new Error('password exists')
+        throw new Error('duplicate password.')
       }
       const currentKey = await this.cl.get('user:' + acctId.toString())
       if (currentKey) {
@@ -42,7 +56,7 @@ class RedisClient extends DBClient {
       await this.cl.set('user:' + acctId.toString(), key)
       await this.cl.hmset(key, { download: dl, upload: ul })
       logger.debug(`Added user: ${acctId}`)
-      return { acctId }
+      return { type: ECommand.Add, data: acctId }
     } catch (e) {
       throw new Error("Query error on 'add': " + e.message)
     }
@@ -56,25 +70,19 @@ class RedisClient extends DBClient {
       }
       await this.cl.del('user:' + acctId.toString())
       logger.debug(`Removed user: ${acctId}`)
-      return { acctId }
+      return { type: ECommand.Delete, data: acctId }
     } catch (e) {
       throw new Error("Query error on 'del': " + e.message)
     }
   }
 
   public getFlow = async (): Promise<DBClientResult> => {
-    interface AccountFlow {
-      acctId: number
-      flow: number
-    }
     try {
-      const result: AccountFlow[] = []
       const accounts = await this.cl.keys('user:*')
-      await Promise.all(
-        accounts
-          .map((acctStr: string) => parseInt(acctStr.slice(5), 10))
-          .map(async (acctId: number) => {
-            const key = await this.cl.get('user:' + acctId)
+      const result = await Promise.all(
+        accounts.map(
+          async (user: string): Promise<UserData> => {
+            const key = await this.cl.get(user)
             let flow = 0
             if (key) {
               const [dl, ul] = await this.cl.hmget(key, 'download', 'upload')
@@ -84,11 +92,15 @@ class RedisClient extends DBClient {
                 (dl ? parseInt(dl, 10) || 0 : 0) +
                 (ul ? parseInt(ul, 10) || 0 : 0)
             }
-            result.push({ acctId: acctId, flow: flow })
-          }),
+            return {
+              acctId: parseInt(user.slice(5), 10),
+              data: flow.toString(),
+            }
+          },
+        ),
       )
       logger.debug('Flow: ' + JSON.stringify(result))
-      return { flow: result }
+      return { type: ECommand.Flow, data: result }
     } catch (e) {
       throw new Error("Query error on 'flow': " + e.message)
     }
