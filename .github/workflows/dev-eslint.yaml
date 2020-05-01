@@ -1,0 +1,14 @@
+on: [push, pull_request]
+name: dev-eslint
+jobs:
+  eslint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set git to use LF
+      run: git config --global core.autocrlf false
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Check Code Quality
+      uses: hallee/eslint-action@master
+      with:
+        repo-token: ${{secrets.GITHUB_TOKEN}}
