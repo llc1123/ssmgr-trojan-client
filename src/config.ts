@@ -1,6 +1,7 @@
 import { program } from 'commander'
-import { Config, EDbType } from './types'
+import { Config } from './types'
 import { logger } from './logger'
+import { EDbType } from './db-client/types'
 
 const parseConfig = (): Config => {
   program

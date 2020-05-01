@@ -1,4 +1,6 @@
 import { Socket } from 'net'
+import { Version } from './version'
+import { EDbType } from './db-client/types'
 
 export enum ECommand {
   List = 'list',
@@ -27,21 +29,11 @@ export interface UserData {
   data: string
 }
 
-export type ParsedResult = string | UserId | UserFlow[] | UserIdPwd[]
-
-export interface DBClientResult {
-  type: ECommand
-  data: number | UserData[] | string
-}
+export type ParsedResult = UserId | UserIdPwd[] | UserFlow[] | Version
 
 export interface ReceiveData {
   data: Buffer
   socket: Socket
-}
-
-export enum EDbType {
-  Redis = 'redis',
-  MySQL = 'mysql',
 }
 
 export interface Config {

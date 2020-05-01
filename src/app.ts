@@ -5,15 +5,14 @@ import { logger } from './logger'
 import { DBClient, initDB } from './db-client/db'
 import { parseConfig, Config } from './config'
 import {
-  DBClientResult,
   ReceiveData,
   ECommand,
   UserFlow,
   UserIdPwd,
-  UserData,
   ParsedResult,
 } from './types'
 import { version } from './version'
+import { DBClientResult } from './db-client/types'
 
 let config: Config
 let dbClient: DBClient
@@ -70,7 +69,7 @@ const receiveCommand = async (data: Buffer): Promise<DBClientResult> => {
     case ECommand.Flow:
       return await dbClient.getFlow()
     case ECommand.Version:
-      return { type: ECommand.Version, data: version }
+      return { type: ECommand.Version, version: version }
     default:
       throw new Error('Invalid command: ' + message.command)
   }
@@ -79,40 +78,25 @@ const receiveCommand = async (data: Buffer): Promise<DBClientResult> => {
 const parseResult = (result: DBClientResult): ParsedResult => {
   switch (result.type) {
     case ECommand.List:
-      if (typeof result.data === 'object') {
-        return result.data.map(
-          (user: UserData): UserIdPwd => ({
-            port: user.acctId,
-            password: user.data,
-          }),
-        )
-      }
-      throw new Error("Invalid data for command 'list'")
+      return result.data.map(
+        (user): UserIdPwd => ({
+          port: user.id,
+          password: user.password,
+        }),
+      )
     case ECommand.Add:
-      if (typeof result.data === 'number') {
-        return { port: result.data }
-      }
-      throw new Error("Invalid data for command 'add'")
+      return { port: result.id }
     case ECommand.Delete:
-      if (typeof result.data === 'number') {
-        return { port: result.data }
-      }
-      throw new Error("Invalid data for command 'del'")
+      return { port: result.id }
     case ECommand.Flow:
-      if (typeof result.data === 'object') {
-        return result.data.map(
-          (user: UserData): UserFlow => ({
-            port: user.acctId,
-            flow: parseInt(user.data, 10),
-          }),
-        )
-      }
-      throw new Error("Invalid data for command 'flow'")
+      return result.data.map(
+        (user): UserFlow => ({
+          port: user.id,
+          flow: user.flow,
+        }),
+      )
     case ECommand.Version:
-      if (typeof result.data === 'string') {
-        return result.data
-      }
-      throw new Error("Invalid data for command 'version'")
+      return result.version
     default:
       throw new Error('Invalid command')
   }

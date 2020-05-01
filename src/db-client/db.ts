@@ -1,4 +1,10 @@
-import { DBClientResult, EDbType } from '../types'
+import {
+  EDbType,
+  ListResult,
+  AddResult,
+  RemoveResult,
+  FlowResult,
+} from './types'
 import { Config } from '../config'
 import { logger } from '../logger'
 
@@ -6,16 +12,16 @@ import { logger } from '../logger'
  * Database Client Abstract Class
  */
 abstract class DBClient {
-  public abstract listAccounts(): Promise<DBClientResult>
+  public abstract listAccounts(): Promise<ListResult>
 
   public abstract addAccount(
     acctId: number,
     password: string,
-  ): Promise<DBClientResult>
+  ): Promise<AddResult>
 
-  public abstract removeAccount(acctId: number): Promise<DBClientResult>
+  public abstract removeAccount(acctId: number): Promise<RemoveResult>
 
-  public abstract getFlow(): Promise<DBClientResult>
+  public abstract getFlow(): Promise<FlowResult>
 
   public abstract disconnect(): void
 }

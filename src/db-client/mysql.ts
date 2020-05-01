@@ -1,8 +1,9 @@
 import { createHash } from 'crypto'
-import { DBClientResult, ECommand, UserData } from '../types'
+import { ECommand } from '../types'
 import { DBClient } from './db'
 import { logger } from '../logger'
 import { Connection } from 'promise-mysql'
+import { ListResult, AddResult, RemoveResult, FlowResult } from './types'
 
 interface OkPacket {
   fieldCount: number
@@ -35,9 +36,12 @@ class MySQLClient extends DBClient {
     this.cl = mysqlClient
   }
 
-  public listAccounts = async (): Promise<DBClientResult> => {
+  public listAccounts = async (): Promise<ListResult> => {
     try {
-      const accts: UserData[] = await this.cl.query(
+      const accts: {
+        id: number
+        password: string
+      }[] = await this.cl.query(
         'SELECT `id` AS `acctId`, `password` AS `data` FROM `users`',
       )
       return { type: ECommand.List, data: accts }
@@ -49,7 +53,7 @@ class MySQLClient extends DBClient {
   public addAccount = async (
     acctId: number,
     password: string,
-  ): Promise<DBClientResult> => {
+  ): Promise<AddResult> => {
     try {
       const key = createHash('sha224')
         .update(`${acctId.toString()}:${password}`, 'utf8')
@@ -65,14 +69,14 @@ class MySQLClient extends DBClient {
           'INSERT INTO `users` VALUES(?, ?, -1, 0, 0) ON DUPLICATE KEY UPDATE `password` = ?',
           [acctId, key, key],
         )
-        return { type: ECommand.Add, data: acctId }
+        return { type: ECommand.Add, id: acctId }
       }
     } catch (e) {
       throw new Error("Query error on 'add': " + e.message)
     }
   }
 
-  public removeAccount = async (acctId: number): Promise<DBClientResult> => {
+  public removeAccount = async (acctId: number): Promise<RemoveResult> => {
     try {
       const result: OkPacket = await this.cl.query(
         'DELETE FROM `users` WHERE `id`= ?',
@@ -80,7 +84,7 @@ class MySQLClient extends DBClient {
       )
       if (result.affectedRows === 1) {
         logger.debug(`Removed user: ${acctId}`)
-        return { type: ECommand.Delete, data: acctId }
+        return { type: ECommand.Delete, id: acctId }
       } else {
         throw new Error(`user id ${acctId} does not exist.`)
       }
@@ -89,7 +93,7 @@ class MySQLClient extends DBClient {
     }
   }
 
-  public getFlow = async (): Promise<DBClientResult> => {
+  public getFlow = async (): Promise<FlowResult> => {
     interface UserUlDl {
       id: number
       upload: number
@@ -111,12 +115,10 @@ class MySQLClient extends DBClient {
       logger.debug(`Flow: ${JSON.stringify(result)}`)
       return {
         type: ECommand.Flow,
-        data: result.map(
-          (userFlow: UserUlDl): UserData => ({
-            acctId: userFlow.id,
-            data: (userFlow.upload + userFlow.download).toString(),
-          }),
-        ),
+        data: result.map((userFlow: UserUlDl) => ({
+          id: userFlow.id,
+          flow: userFlow.upload + userFlow.download,
+        })),
       }
     } catch (e) {
       throw new Error("Query error on 'flow': " + e.message)
