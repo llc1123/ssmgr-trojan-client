@@ -49,7 +49,8 @@ const parseConfig = (): Config => {
         ? 3306
         : 6379,
     dbName: program.dbName || 'trojan',
-    dbUser: program.dbUser || program.dbType === EDbType.MySQL ? 'trojan' : '',
+    dbUser:
+      program.dbUser || (program.dbType === EDbType.MySQL ? 'trojan' : ''),
     dbPassword: program.dbPassword || '',
   }
 }
