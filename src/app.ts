@@ -24,26 +24,26 @@ let dbClient: DBClient
  *  list ()
  *    List current users and encoded passwords
  *    return type:
- *      { type: 'list', data: [{ acctId: <number>, data: password<string> }, ...] }
+ *      { type: 'list', data: [{ id: <number>, password: password<string> }, ...] }
  *  add (acctId<number>, password<string>)
  *    Attention: Based on trojan protocol, passwords must be unique.
  *    Passwords are stored in redis in SHA224 encoding (Don't pass encoded passwords).
  *    Use this method if you want to change password.
  *    return type:
- *      { type: 'add', data: acctId<number> }
+ *      { type: 'add', id: acctId<number> }
  *  del (acctId<number>)
  *    Deletes an account by the given account ID
  *    return type:
- *      { type: 'del', data: acctId<number> }
+ *      { type: 'del', id: acctId<number> }
  *  flow ()
  *    Returns flow data of all accounts since last flow query (including ones having no flow).
  *    It also lets you check active accounts. (In case redis has been wiped)
  *    return type:
- *      { type: 'flow', data: [{ acctId: <number>, data: flow<number> }, ...] }
+ *      { type: 'flow', data: [{ id: <number>, flow: flow<number> }, ...] }
  *  version ()
  *    Returns the version of this client.
  *    return type:
- *      { type: 'version', data: version<string> }
+ *      { type: 'version', version: version<string> }
  */
 const receiveCommand = async (data: Buffer): Promise<DBClientResult> => {
   interface CommandMessage {
