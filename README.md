@@ -1,5 +1,7 @@
 # ssmgr-trojan-client
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/4e94a5c64493490b95696e9b69d14c50)](https://app.codacy.com/manual/llc1123/ssmgr-trojan-client?utm_source=github.com&utm_medium=referral&utm_content=llc1123/ssmgr-trojan-client&utm_campaign=Badge_Grade_Dashboard)
+
 ![dev-build](https://github.com/llc1123/ssmgr-trojan-client/workflows/dev-build/badge.svg?event=push)
 
 A [shadowsocks-manager](https://github.com/shadowsocks/shadowsocks-manager) s-node for trojan-gfw. If you know how to use trojan and shadowsocks-manager, you know what this does.
