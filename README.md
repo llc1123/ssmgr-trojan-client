@@ -1,7 +1,11 @@
 # ssmgr-trojan-client
 
+![npm](https://img.shields.io/npm/v/ssmgr-trojan-client)
+![npm bundle size](https://img.shields.io/bundlephobia/min/ssmgr-trojan-client)
+![npm](https://img.shields.io/npm/dt/ssmgr-trojan-client)
 ![dev-build](https://github.com/llc1123/ssmgr-trojan-client/workflows/dev-build/badge.svg?event=push)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/4e94a5c64493490b95696e9b69d14c50)](https://app.codacy.com/manual/llc1123/ssmgr-trojan-client?utm_source=github.com&utm_medium=referral&utm_content=llc1123/ssmgr-trojan-client&utm_campaign=Badge_Grade_Dashboard)
+![NPM](https://img.shields.io/npm/l/ssmgr-trojan-client)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fllc1123%2Fssmgr-trojan-client.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fllc1123%2Fssmgr-trojan-client?ref=badge_shield)
 
 A [shadowsocks-manager](https://github.com/shadowsocks/shadowsocks-manager) s-node for trojan-gfw. If you know how to use trojan and shadowsocks-manager, you know what this does.
