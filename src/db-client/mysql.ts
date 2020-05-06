@@ -1,4 +1,3 @@
-import { createHash } from 'crypto'
 import { ECommand } from '../types'
 import { DBClient } from './db'
 import { logger } from '../logger'
@@ -41,9 +40,7 @@ class MySQLClient extends DBClient {
       const accts: {
         id: number
         password: string
-      }[] = await this.cl.query(
-        'SELECT `id`, `password` FROM `users`',
-      )
+      }[] = await this.cl.query('SELECT `id`, `password` FROM `users`')
       return { type: ECommand.List, data: accts }
     } catch (e) {
       throw new Error("Query error on 'list': " + e.message)
@@ -55,9 +52,6 @@ class MySQLClient extends DBClient {
     password: string,
   ): Promise<AddResult> => {
     try {
-      // const key = createHash('sha224')
-      //   .update(`${acctId.toString()}:${password}`, 'utf8')
-      //   .digest('hex')
       const key = password
       const dup: { id: number }[] = await this.cl.query(
         'SELECT `id` FROM `users` WHERE `password` = ?',

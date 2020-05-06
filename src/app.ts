@@ -96,7 +96,7 @@ const parseResult = (result: DBClientResult): ParsedResult => {
         }),
       )
     case ECommand.Version:
-      return result.version
+      return { version: result.version }
     default:
       throw new Error('Invalid command')
   }
@@ -178,14 +178,12 @@ const server = createServer((socket: Socket) => {
     receive.data = Buffer.concat([receive.data, data])
     checkData(receive)
   })
-  socket.on('end', () => {})
-  socket.on('close', () => {})
 }).on('error', (err: Error) => {
   logger.error('Socket error: ', err.message)
 })
 
 const startServer = async (): Promise<void> => {
-  logger.info(`ssmgr client for trojan v${version.version}`)
+  logger.info(`ssmgr client for trojan v${version}`)
 
   config = parseConfig()
   if (config.debug) {

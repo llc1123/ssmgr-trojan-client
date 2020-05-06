@@ -29,7 +29,11 @@ export interface UserData {
   data: string
 }
 
-export type ParsedResult = UserId | UserIdPwd[] | UserFlow[] | Version
+export interface ParsedVersion {
+  version: Version
+}
+
+export type ParsedResult = UserId | UserIdPwd[] | UserFlow[] | ParsedVersion
 
 export interface ReceiveData {
   data: Buffer
