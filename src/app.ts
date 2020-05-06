@@ -92,7 +92,7 @@ const parseResult = (result: DBClientResult): ParsedResult => {
       return result.data.map(
         (user): UserFlow => ({
           port: user.id,
-          flow: user.flow,
+          sumFlow: user.flow,
         }),
       )
     case ECommand.Version:
@@ -178,12 +178,14 @@ const server = createServer((socket: Socket) => {
     receive.data = Buffer.concat([receive.data, data])
     checkData(receive)
   })
+  socket.on('end', () => {})
+  socket.on('close', () => {})
 }).on('error', (err: Error) => {
   logger.error('Socket error: ', err.message)
 })
 
 const startServer = async (): Promise<void> => {
-  logger.info(`ssmgr client for trojan v${version}`)
+  logger.info(`ssmgr client for trojan v${version.version}`)
 
   config = parseConfig()
   if (config.debug) {

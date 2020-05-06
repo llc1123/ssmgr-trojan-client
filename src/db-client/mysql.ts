@@ -42,7 +42,7 @@ class MySQLClient extends DBClient {
         id: number
         password: string
       }[] = await this.cl.query(
-        'SELECT `id` AS `acctId`, `password` AS `data` FROM `users`',
+        'SELECT `id`, `password` FROM `users`',
       )
       return { type: ECommand.List, data: accts }
     } catch (e) {
@@ -55,9 +55,10 @@ class MySQLClient extends DBClient {
     password: string,
   ): Promise<AddResult> => {
     try {
-      const key = createHash('sha224')
-        .update(`${acctId.toString()}:${password}`, 'utf8')
-        .digest('hex')
+      // const key = createHash('sha224')
+      //   .update(`${acctId.toString()}:${password}`, 'utf8')
+      //   .digest('hex')
+      const key = password
       const dup: { id: number }[] = await this.cl.query(
         'SELECT `id` FROM `users` WHERE `password` = ?',
         key,
@@ -102,7 +103,7 @@ class MySQLClient extends DBClient {
 
     try {
       const result: UserUlDl[] = await this.cl.query(
-        'SELECT `id`, `upload`, `download` FROM `users`',
+        'SELECT `id`, `upload`, `download` FROM `users` WHERE upload > 0 OR download > 0',
       )
       await Promise.all(
         result.map((userUlDl: UserUlDl): void => {

@@ -21,7 +21,7 @@ export interface UserIdPwd {
 
 export interface UserFlow {
   port: number
-  flow: number
+  sumFlow: number
 }
 
 export interface UserData {
