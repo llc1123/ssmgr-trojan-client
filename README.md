@@ -12,6 +12,11 @@ A [shadowsocks-manager](https://github.com/shadowsocks/shadowsocks-manager) s-no
 
 Support multiple variants of trojan. Including [p4gefau1t/trojan-go](https://github.com/p4gefau1t/trojan-go), [trojan-gfw/trojan](https://github.com/trojan-gfw/trojan), [DenrianWeiss/trojan-cluster](https://github.com/DenrianWeiss/trojan-cluster) and others.
 
+## Prerequisites
+- Trojan with MySQL or Redis support
+- Node.js >= 12.0
+- shadowsocks-manager >= 0.36.0
+
 ## Installation
 ```
 npm -g i ssmgr-trojan-client
