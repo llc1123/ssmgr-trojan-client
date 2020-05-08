@@ -61,7 +61,8 @@ class MySQLClient extends DBClient {
         throw new Error('duplicate password.')
       } else {
         await this.cl.query(
-          'INSERT INTO `users` VALUES(?, ?, -1, 0, 0) ON DUPLICATE KEY UPDATE `password` = ?',
+          'INSERT INTO `users` (`id`, `password`, `quota`, `download`, `upload`) \
+           VALUES(?, ?, -1, 0, 0) ON DUPLICATE KEY UPDATE `password` = ?',
           [acctId, key, key],
         )
         return { type: ECommand.Add, id: acctId }
