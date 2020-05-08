@@ -37,7 +37,6 @@ const initDB = async (config: Config): Promise<DBClient> => {
             port: config.dbPort,
             host: config.dbAddr,
             password: config.dbPassword,
-            db: +config.dbName || 0,
           }),
         )
         logger.info(
