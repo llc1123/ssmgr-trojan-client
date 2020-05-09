@@ -178,6 +178,9 @@ const server = createServer((socket: Socket) => {
     receive.data = Buffer.concat([receive.data, data])
     checkData(receive)
   })
+  socket.on('error', (err: Error) => {
+    logger.error('Socket error: ', err.message)
+  })
 }).on('error', (err: Error) => {
   logger.error('Socket error: ', err.message)
 })
