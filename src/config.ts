@@ -45,9 +45,7 @@ const parseConfig = (): Config => {
     dbAddr: program.dbAddress?.split(':')[0] || 'localhost',
     dbPort:
       parseInt(program.dbAddress?.split(':')[1], 10) ||
-      program.dbType === EDbType.MySQL
-        ? 3306
-        : 6379,
+      (program.dbType === EDbType.MySQL ? 3306 : 6379),
     dbName: program.dbName || 'trojan',
     dbUser:
       program.dbUser || (program.dbType === EDbType.MySQL ? 'trojan' : ''),
