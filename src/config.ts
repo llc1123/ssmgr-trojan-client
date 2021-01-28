@@ -4,7 +4,8 @@ import { logger } from './logger'
 import { EDbType } from './db-client/types'
 
 const parseConfig = (): Config => {
-  program
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  const cli: any = program
     .option(
       '-d, --debug',
       'verbose output for debug infomation (default: false)',
@@ -30,26 +31,25 @@ const parseConfig = (): Config => {
     .option('--db-password <password>', 'database password (default: none)')
     .parse(process.argv)
 
-  const key = program.key || Math.random().toString(36).substring(2, 15)
+  const key = cli.key || Math.random().toString(36).substring(2, 15)
 
-  if (!program.key) {
+  if (!cli.key) {
     logger.warn(`Password not specified. Using random password {${key}}`)
   }
 
   return {
-    debug: program.debug ? true : false,
-    addr: program.listenAddress?.split(':')[0] || '0.0.0.0',
-    port: parseInt(program.listenAddress?.split(':')[1], 10) || 4001,
+    debug: cli.debug ? true : false,
+    addr: cli.listenAddress?.split(':')[0] || '0.0.0.0',
+    port: parseInt(cli.listenAddress?.split(':')[1], 10) || 4001,
     key: key,
-    dbType: (program.dbType as EDbType) || EDbType.Redis,
-    dbAddr: program.dbAddress?.split(':')[0] || 'localhost',
+    dbType: (cli.dbType as EDbType) || EDbType.Redis,
+    dbAddr: cli.dbAddress?.split(':')[0] || 'localhost',
     dbPort:
-      parseInt(program.dbAddress?.split(':')[1], 10) ||
-      (program.dbType === EDbType.MySQL ? 3306 : 6379),
-    dbName: program.dbName || 'trojan',
-    dbUser:
-      program.dbUser || (program.dbType === EDbType.MySQL ? 'trojan' : ''),
-    dbPassword: program.dbPassword || '',
+      parseInt(cli.dbAddress?.split(':')[1], 10) ||
+      (cli.dbType === EDbType.MySQL ? 3306 : 6379),
+    dbName: cli.dbName || 'trojan',
+    dbUser: cli.dbUser || (cli.dbType === EDbType.MySQL ? 'trojan' : ''),
+    dbPassword: cli.dbPassword || '',
   }
 }
 
