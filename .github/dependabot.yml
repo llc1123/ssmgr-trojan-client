@@ -8,11 +8,6 @@ updates:
     timezone: Asia/Shanghai
   open-pull-requests-limit: 10
   ignore:
-  - dependency-name: eslint-config-prettier
-    versions:
-    - 8.0.0
-    - 8.1.0
-    - 8.2.0
   - dependency-name: commander
     versions:
     - 7.1.0
