@@ -4,10 +4,6 @@ updates:
   directory: "/"
   schedule:
     interval: daily
-    time: "11:00"
+    time: "04:00"
     timezone: Asia/Shanghai
   open-pull-requests-limit: 10
-  ignore:
-  - dependency-name: commander
-    versions:
-    - 7.1.0
