@@ -30,26 +30,28 @@ const parseConfig = (): Config => {
     .option('--db-password <password>', 'database password (default: none)')
     .parse(process.argv)
 
-  const key = program.key || Math.random().toString(36).substring(2, 15)
+  const options = program.opts()
 
-  if (!program.key) {
+  const key = options.key || Math.random().toString(36).substring(2, 15)
+
+  if (!options.key) {
     logger.warn(`Password not specified. Using random password {${key}}`)
   }
 
   return {
-    debug: program.debug ? true : false,
-    addr: program.listenAddress?.split(':')[0] || '0.0.0.0',
-    port: parseInt(program.listenAddress?.split(':')[1], 10) || 4001,
+    debug: options.debug ? true : false,
+    addr: options.listenAddress?.split(':')[0] || '0.0.0.0',
+    port: parseInt(options.listenAddress?.split(':')[1], 10) || 4001,
     key: key,
-    dbType: (program.dbType as EDbType) || EDbType.Redis,
-    dbAddr: program.dbAddress?.split(':')[0] || 'localhost',
+    dbType: (options.dbType as EDbType) || EDbType.Redis,
+    dbAddr: options.dbAddress?.split(':')[0] || 'localhost',
     dbPort:
-      parseInt(program.dbAddress?.split(':')[1], 10) ||
-      (program.dbType === EDbType.MySQL ? 3306 : 6379),
-    dbName: program.dbName || 'trojan',
+      parseInt(options.dbAddress?.split(':')[1], 10) ||
+      (options.dbType === EDbType.MySQL ? 3306 : 6379),
+    dbName: options.dbName || 'trojan',
     dbUser:
-      program.dbUser || (program.dbType === EDbType.MySQL ? 'trojan' : ''),
-    dbPassword: program.dbPassword || '',
+      options.dbUser || (options.dbType === EDbType.MySQL ? 'trojan' : ''),
+    dbPassword: options.dbPassword || '',
   }
 }
 
