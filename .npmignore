@@ -1,4 +1,5 @@
 .vscode/
+.github/
 src/
 .eslintrc.js
 tsconfig.json
