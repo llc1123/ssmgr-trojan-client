@@ -1,2 +1,4 @@
-export const version = '1.2.6'
+import { version as versionStr } from '../package.json'
+
+export const version = versionStr
 export type Version = typeof version

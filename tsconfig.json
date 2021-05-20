@@ -5,6 +5,8 @@
     "allowJs": false,
     "outDir": "./dist",
     "strict": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true
   }
 }
