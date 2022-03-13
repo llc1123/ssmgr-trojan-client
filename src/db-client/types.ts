@@ -4,6 +4,7 @@ import { Version } from '../version'
 export enum EDbType {
   Redis = 'redis',
   MySQL = 'mysql',
+  API = 'api',
 }
 
 export interface ListResult {

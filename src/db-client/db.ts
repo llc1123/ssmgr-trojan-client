@@ -1,12 +1,12 @@
-import {
-  EDbType,
-  ListResult,
-  AddResult,
-  RemoveResult,
-  FlowResult,
-} from './types'
 import { Config } from '../config'
 import { logger } from '../logger'
+import {
+  AddResult,
+  EDbType,
+  FlowResult,
+  ListResult,
+  RemoveResult,
+} from './types'
 
 /**
  * Database Client Abstract Class
@@ -63,6 +63,21 @@ const initDB = async (config: Config): Promise<DBClient> => {
         )
         logger.info(
           `Running in MySQL mode. Connected to ${config.dbAddr}:${config.dbPort}`,
+        )
+        return cl
+      } catch (e) {
+        logger.error(e.message)
+        throw new Error()
+      }
+    case EDbType.API:
+      try {
+        const { APIClient } = await import('./api-client')
+        const cl = new APIClient({
+          host: config.dbAddr,
+          port: config.dbPort,
+        })
+        logger.info(
+          `Running in API mode. Connected to ${config.dbAddr}:${config.dbPort}`,
         )
         return cl
       } catch (e) {

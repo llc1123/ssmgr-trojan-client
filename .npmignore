@@ -4,3 +4,4 @@ src/
 .eslintrc.js
 tsconfig.json
 Dockerfile
+.idea/

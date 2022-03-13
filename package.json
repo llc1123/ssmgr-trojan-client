@@ -10,12 +10,18 @@
     "lint": "eslint src --ext .ts",
     "build": "eslint src --ext .ts && tsc",
     "start": "tsc && node dist/app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "protos": "protoc --ts_out src/protobuf --proto_path protobuf src/protobuf/api.proto"
   },
   "author": "llc1123",
   "license": "MIT",
   "repository": "https://github.com/llc1123/ssmgr-trojan-client",
   "dependencies": {
+    "@grpc/grpc-js": "^1.5.7",
+    "@protobuf-ts/grpc-transport": "^2.2.2",
+    "@protobuf-ts/plugin": "^2.2.2",
+    "@protobuf-ts/runtime": "^2.2.2",
+    "@protobuf-ts/runtime-rpc": "^2.2.2",
     "commander": "^7.2.0",
     "ioredis": "^4.16.3",
     "log4js": "^6.2.1",
@@ -32,5 +38,8 @@
     "prettier": "^2.0.5",
     "tslint": "^6.1.2",
     "typescript": "^4.0.2"
+  },
+  "engines": {
+    "node": ">=14"
   }
 }
