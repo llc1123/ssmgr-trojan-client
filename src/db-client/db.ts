@@ -30,7 +30,7 @@ const initDB = async (config: Config): Promise<DBClient> => {
   switch (config.dbType) {
     case EDbType.Redis:
       try {
-        const Redis = await import('ioredis')
+        const { default: Redis } = await import('ioredis')
         const { RedisClient } = await import('./redis')
         const cl = new RedisClient(
           new Redis({

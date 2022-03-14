@@ -56,7 +56,6 @@ export class APIClient extends DBClient {
           password: hash,
         })
       }
-      console.log(accounts)
       return { type: ECommand.List, data: accounts }
     } catch (e) {
       throw new Error("Query error on 'list': " + e.message)
