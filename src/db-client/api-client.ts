@@ -60,7 +60,7 @@ export class APIClient extends DBClient {
         })
       }
 
-      await streamingCall
+      await streamingCall.status
 
       return { type: ECommand.List, data: accounts }
     } catch (e) {
@@ -93,7 +93,7 @@ export class APIClient extends DBClient {
 
       await duplexCall.requests.complete()
 
-      await duplexCall
+      await duplexCall.status
 
       passwordHashToAccountMap.set(passwordHash, {
         accountId: acctId,
@@ -133,7 +133,7 @@ export class APIClient extends DBClient {
 
       await duplexCall.requests.complete()
 
-      await duplexCall
+      await duplexCall.status
 
       accountIdToPasswordHashMap.delete(acctId)
       passwordHashToAccountMap.delete(passwordHash)
@@ -197,11 +197,11 @@ export class APIClient extends DBClient {
 
           await setUserCall.requests.complete()
 
-          await setUserCall
+          await setUserCall.status
         }
       }
 
-      await streamingCall
+      await streamingCall.status
 
       return { type: ECommand.Flow, data: accounts }
     } catch (e) {
