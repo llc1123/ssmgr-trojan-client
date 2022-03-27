@@ -43,7 +43,10 @@ class MySQLClient extends DBClient {
       }[] = await this.cl.query('SELECT `id`, `password` FROM `users`')
       return { type: ECommand.List, data: accts }
     } catch (e) {
-      throw new Error("Query error on 'list': " + e.message)
+      if (e instanceof Error) {
+        throw new Error("Query error on 'list': " + e.message)
+      }
+      throw new Error("Query error on 'list': " + e)
     }
   }
 
@@ -68,7 +71,10 @@ class MySQLClient extends DBClient {
         return { type: ECommand.Add, id: acctId }
       }
     } catch (e) {
-      throw new Error("Query error on 'add': " + e.message)
+      if (e instanceof Error) {
+        throw new Error("Query error on 'add': " + e.message)
+      }
+      throw new Error("Query error on 'add': " + e)
     }
   }
 
@@ -85,7 +91,10 @@ class MySQLClient extends DBClient {
         throw new Error(`user id ${acctId} does not exist.`)
       }
     } catch (e) {
-      throw new Error("Query error on 'del': " + e.message)
+      if (e instanceof Error) {
+        throw new Error("Query error on 'del': " + e.message)
+      }
+      throw new Error("Query error on 'del': " + e)
     }
   }
 
@@ -117,7 +126,10 @@ class MySQLClient extends DBClient {
         })),
       }
     } catch (e) {
-      throw new Error("Query error on 'flow': " + e.message)
+      if (e instanceof Error) {
+        throw new Error("Query error on 'flow': " + e.message)
+      }
+      throw new Error("Query error on 'flow': " + e)
     }
   }
 

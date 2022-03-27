@@ -1,5 +1,6 @@
 import { Config } from '../config'
 import { logger } from '../logger'
+import Sentry from '../sentry'
 import {
   AddResult,
   EDbType,
@@ -21,7 +22,7 @@ abstract class DBClient {
 
   public abstract removeAccount(acctId: number): Promise<RemoveResult>
 
-  public abstract getFlow(): Promise<FlowResult>
+  public abstract getFlow(options?: { clear?: boolean }): Promise<FlowResult>
 
   public abstract disconnect(): void
 }
@@ -44,8 +45,12 @@ const initDB = async (config: Config): Promise<DBClient> => {
         )
         return cl
       } catch (e) {
-        logger.error(e.message)
-        throw new Error()
+        if (e instanceof Error) {
+          Sentry.captureException(e)
+          throw new Error(`Redis client init failed: ${e.message}`)
+        }
+
+        throw new Error(`Redis client init failed: ${e}`)
       }
     case EDbType.MySQL:
       try {
@@ -66,8 +71,12 @@ const initDB = async (config: Config): Promise<DBClient> => {
         )
         return cl
       } catch (e) {
-        logger.error(e.message)
-        throw new Error()
+        if (e instanceof Error) {
+          Sentry.captureException(e)
+          throw new Error(`MySQL client init failed: ${e.message}`)
+        }
+
+        throw new Error(`MySQL client init failed: ${e}`)
       }
     case EDbType.API:
       try {
@@ -81,12 +90,15 @@ const initDB = async (config: Config): Promise<DBClient> => {
         )
         return cl
       } catch (e) {
-        logger.error(e.message)
-        throw new Error()
+        if (e instanceof Error) {
+          Sentry.captureException(e)
+          throw new Error(`API client init failed: ${e.message}`)
+        }
+
+        throw new Error(`API client init failed: ${e}`)
       }
     default:
-      logger.error(`Database ${config.dbType} not supported.`)
-      throw new Error()
+      throw new Error(`Database ${config.dbType} not supported.`)
   }
 }
 

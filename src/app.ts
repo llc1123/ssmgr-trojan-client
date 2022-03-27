@@ -4,6 +4,7 @@ import { createHash } from 'crypto'
 import { logger } from './logger'
 import { DBClient, initDB } from './db-client/db'
 import { parseConfig, Config } from './config'
+import sentry from './sentry'
 import {
   ReceiveData,
   ECommand,
@@ -50,6 +51,10 @@ const receiveCommand = async (data: Buffer): Promise<DBClientResult> => {
     command: ECommand
     port: number
     password: string
+    options?: {
+      clear?: boolean
+    }
+    [key: string]: any
   }
 
   const message: CommandMessage = {
@@ -67,7 +72,7 @@ const receiveCommand = async (data: Buffer): Promise<DBClientResult> => {
     case ECommand.Delete:
       return await dbClient.removeAccount(message.port)
     case ECommand.Flow:
-      return await dbClient.getFlow()
+      return await dbClient.getFlow(message.options)
     case ECommand.Version:
       return { type: ECommand.Version, version: version }
     default:
@@ -158,10 +163,12 @@ const checkData = async (receive: ReceiveData): Promise<void> => {
       const result = parseResult(await receiveCommand(data))
       receive.socket.end(pack({ code: 0, data: result }))
     } catch (err) {
-      logger.error(err.message)
-      receive.socket.end(
-        pack({ code: err.message === 'Invalid command' ? 1 : -1 }),
-      )
+      if (err instanceof Error) {
+        logger.error(err.message)
+        receive.socket.end(
+          pack({ code: err.message === 'Invalid command' ? 1 : -1 }),
+        )
+      }
     }
     if (buffer.length > length + 2) {
       checkData(receive)
@@ -179,10 +186,12 @@ const server = createServer((socket: Socket) => {
     checkData(receive)
   })
   socket.on('error', (err: Error) => {
+    sentry.captureException(err)
     logger.error('Socket error: ', err.message)
   })
 }).on('error', (err: Error) => {
-  logger.error('Socket error: ', err.message)
+  sentry.captureException(err)
+  logger.error('TCP server error: ', err.message)
 })
 
 const startServer = async (): Promise<void> => {
@@ -201,4 +210,12 @@ const startServer = async (): Promise<void> => {
   })
 }
 
-startServer().catch(() => logger.error('FATAL ERROR. TERMINATED.'))
+startServer().catch((e) => {
+  if (e instanceof Error) {
+    logger.error(e.message)
+  } else {
+    logger.error(e)
+  }
+  logger.error('FATAL ERROR. TERMINATED.')
+  process.exit(1)
+})
