@@ -4,7 +4,7 @@ import { createHash } from 'crypto'
 import { logger } from './logger'
 import { DBClient, initDB } from './db-client/db'
 import { parseConfig, Config } from './config'
-import sentry from './sentry'
+import Sentry from './sentry'
 import {
   ReceiveData,
   ECommand,
@@ -161,9 +161,15 @@ const checkData = async (receive: ReceiveData): Promise<void> => {
     }
     try {
       const result = parseResult(await receiveCommand(data))
+
+      if (config.debug) {
+        logger.debug('Result: ' + JSON.stringify(result, null, 2))
+      }
+
       receive.socket.end(pack({ code: 0, data: result }))
     } catch (err) {
       if (err instanceof Error) {
+        Sentry.captureException(err)
         logger.error(err.message)
         receive.socket.end(
           pack({ code: err.message === 'Invalid command' ? 1 : -1 }),
@@ -171,7 +177,10 @@ const checkData = async (receive: ReceiveData): Promise<void> => {
       }
     }
     if (buffer.length > length + 2) {
-      checkData(receive)
+      checkData(receive).catch((err: Error) => {
+        Sentry.captureException(err)
+        logger.error(err.message)
+      })
     }
   }
 }
@@ -183,19 +192,22 @@ const server = createServer((socket: Socket) => {
   }
   socket.on('data', (data: Buffer) => {
     receive.data = Buffer.concat([receive.data, data])
-    checkData(receive)
+    checkData(receive).catch((err: Error) => {
+      Sentry.captureException(err)
+      logger.error(err.message)
+    })
   })
   socket.on('error', (err: Error) => {
-    sentry.captureException(err)
+    Sentry.captureException(err)
     logger.error('Socket error: ', err.message)
   })
 }).on('error', (err: Error) => {
-  sentry.captureException(err)
+  Sentry.captureException(err)
   logger.error('TCP server error: ', err.message)
 })
 
 const startServer = async (): Promise<void> => {
-  logger.info(`ssmgr client for trojan v${version}`)
+  logger.info(`Running ssmgr-trojan-client v${version}`)
 
   config = parseConfig()
   if (config.debug) {

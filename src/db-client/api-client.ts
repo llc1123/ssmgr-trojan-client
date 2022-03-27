@@ -30,6 +30,8 @@ export class APIClient extends DBClient {
     this.transport = new GrpcTransport({
       host: `${host}:${port}`,
       channelCredentials: ChannelCredentials.createInsecure(),
+      'grpc.max_receive_message_length': 20 * 1024 * 1024,
+      'grpc.max_send_message_length': 20 * 1024 * 1024,
     })
     this.cl = new TrojanServerServiceClient(this.transport)
   }
@@ -75,9 +77,9 @@ export class APIClient extends DBClient {
     passwordHash: string,
   ): Promise<AddResult> {
     try {
-      const streamingCall = this.cl.setUsers()
+      const duplexCall = this.cl.setUsers()
 
-      await streamingCall.requests.send({
+      await duplexCall.requests.send({
         operation: SetUsersRequest_Operation.Add,
         status: {
           ipLimit: 0,
@@ -89,7 +91,9 @@ export class APIClient extends DBClient {
         },
       })
 
-      await streamingCall
+      await duplexCall.requests.complete()
+
+      await duplexCall
 
       passwordHashToAccountMap.set(passwordHash, {
         accountId: acctId,
@@ -108,14 +112,14 @@ export class APIClient extends DBClient {
 
   public async removeAccount(acctId: number): Promise<RemoveResult> {
     try {
-      const streamingCall = this.cl.setUsers()
+      const duplexCall = this.cl.setUsers()
       const passwordHash = accountIdToPasswordHashMap.get(acctId)
 
       if (!passwordHash) {
         throw new Error('Could not find the account ' + acctId)
       }
 
-      await streamingCall.requests.send({
+      await duplexCall.requests.send({
         operation: SetUsersRequest_Operation.Delete,
         status: {
           ipLimit: 0,
@@ -127,7 +131,9 @@ export class APIClient extends DBClient {
         },
       })
 
-      await streamingCall
+      await duplexCall.requests.complete()
+
+      await duplexCall
 
       accountIdToPasswordHashMap.delete(acctId)
       passwordHashToAccountMap.delete(passwordHash)
@@ -188,6 +194,8 @@ export class APIClient extends DBClient {
               },
             },
           })
+
+          await setUserCall.requests.complete()
 
           await setUserCall
         }
