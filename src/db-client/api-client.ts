@@ -2,6 +2,7 @@ import { ChannelCredentials } from '@grpc/grpc-js'
 import { GrpcTransport } from '@protobuf-ts/grpc-transport'
 import { SetUsersRequest_Operation } from '../protobuf/api'
 import { TrojanServerServiceClient } from '../protobuf/api.client'
+import Sentry from '../sentry'
 import { ECommand } from '../types'
 import { DBClient } from './db'
 import { AddResult, FlowResult, ListResult, RemoveResult } from './types'
@@ -56,9 +57,16 @@ export class APIClient extends DBClient {
           password: hash,
         })
       }
+
+      await streamingCall
+
       return { type: ECommand.List, data: accounts }
     } catch (e) {
-      throw new Error("Query error on 'list': " + e.message)
+      if (e instanceof Error) {
+        Sentry.captureException(e)
+        throw new Error("Query error on 'list': " + e.message)
+      }
+      throw new Error("Query error on 'list': " + e)
     }
   }
 
@@ -81,6 +89,8 @@ export class APIClient extends DBClient {
         },
       })
 
+      await streamingCall
+
       passwordHashToAccountMap.set(passwordHash, {
         accountId: acctId,
       })
@@ -88,7 +98,11 @@ export class APIClient extends DBClient {
 
       return { type: ECommand.Add, id: acctId }
     } catch (e) {
-      throw new Error("Query error on 'add': " + e.message)
+      if (e instanceof Error) {
+        Sentry.captureException(e)
+        throw new Error("Query error on 'add': " + e.message)
+      }
+      throw new Error("Query error on 'add': " + e)
     }
   }
 
@@ -113,16 +127,22 @@ export class APIClient extends DBClient {
         },
       })
 
+      await streamingCall
+
       accountIdToPasswordHashMap.delete(acctId)
       passwordHashToAccountMap.delete(passwordHash)
 
       return { type: ECommand.Delete, id: acctId }
     } catch (e) {
-      throw new Error("Query error on 'del': " + e.message)
+      if (e instanceof Error) {
+        Sentry.captureException(e)
+        throw new Error("Query error on 'del': " + e.message)
+      }
+      throw new Error("Query error on 'del': " + e)
     }
   }
 
-  public async getFlow(): Promise<FlowResult> {
+  public async getFlow(options: { clear?: boolean } = {}): Promise<FlowResult> {
     try {
       const streamingCall = this.cl.listUsers({})
       const accounts: Array<{
@@ -150,28 +170,38 @@ export class APIClient extends DBClient {
           flow: downloadInNumber + uploadInNumber,
         })
 
-        const setUserCall = this.cl.setUsers()
+        if (options.clear) {
+          const setUserCall = this.cl.setUsers()
 
-        await setUserCall.requests.send({
-          operation: SetUsersRequest_Operation.Modify,
-          status: {
-            ipLimit: 0,
-            ipCurrent: 0,
-            user: {
-              password: '',
-              hash,
+          await setUserCall.requests.send({
+            operation: SetUsersRequest_Operation.Modify,
+            status: {
+              ipLimit: 0,
+              ipCurrent: 0,
+              user: {
+                password: '',
+                hash,
+              },
+              trafficTotal: {
+                uploadTraffic: 0n,
+                downloadTraffic: 0n,
+              },
             },
-            trafficTotal: {
-              uploadTraffic: 0n,
-              downloadTraffic: 0n,
-            },
-          },
-        })
+          })
+
+          await setUserCall
+        }
       }
+
+      await streamingCall
 
       return { type: ECommand.Flow, data: accounts }
     } catch (e) {
-      throw new Error("Query error on 'flow': " + e.message)
+      if (e instanceof Error) {
+        Sentry.captureException(e)
+        throw new Error("Query error on 'flow': " + e.message)
+      }
+      throw new Error("Query error on 'flow': " + e)
     }
   }
 

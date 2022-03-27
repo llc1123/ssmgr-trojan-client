@@ -7,7 +7,7 @@ const parseConfig = (): Config => {
   program
     .option(
       '-d, --debug',
-      'verbose output for debug infomation (default: false)',
+      'verbose output for debug information (default: false)',
     )
     .option(
       '-l, --listen-address <addr:port>',

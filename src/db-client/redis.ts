@@ -31,7 +31,10 @@ class RedisClient extends DBClient {
       logger.debug('List: ' + JSON.stringify(result))
       return { type: ECommand.List, data: result }
     } catch (e) {
-      throw new Error("Query error on 'list': " + e.message)
+      if (e instanceof Error) {
+        throw new Error("Query error on 'list': " + e.message)
+      }
+      throw new Error("Query error on 'list': " + e)
     }
   }
 
@@ -68,7 +71,10 @@ class RedisClient extends DBClient {
       logger.debug(`Added user: ${acctId}`)
       return { type: ECommand.Add, id: acctId }
     } catch (e) {
-      throw new Error("Query error on 'add': " + e.message)
+      if (e instanceof Error) {
+        throw new Error("Query error on 'add': " + e.message)
+      }
+      throw new Error("Query error on 'add': " + e)
     }
   }
 
@@ -87,7 +93,10 @@ class RedisClient extends DBClient {
       logger.debug(`Removed user: ${acctId}`)
       return { type: ECommand.Delete, id: acctId }
     } catch (e) {
-      throw new Error("Query error on 'del': " + e.message)
+      if (e instanceof Error) {
+        throw new Error("Query error on 'del': " + e.message)
+      }
+      throw new Error("Query error on 'del': " + e)
     }
   }
 
@@ -119,7 +128,10 @@ class RedisClient extends DBClient {
       logger.debug('Flow: ' + JSON.stringify(result))
       return { type: ECommand.Flow, data: result }
     } catch (e) {
-      throw new Error("Query error on 'flow': " + e.message)
+      if (e instanceof Error) {
+        throw new Error("Query error on 'flow': " + e.message)
+      }
+      throw new Error("Query error on 'flow': " + e)
     }
   }
 

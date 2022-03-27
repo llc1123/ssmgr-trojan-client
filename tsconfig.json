@@ -8,6 +8,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
-    "useUnknownInCatchVariables": false
+    "useUnknownInCatchVariables": true,
+    "sourceMap": true,
+    "inlineSources": true
   }
 }

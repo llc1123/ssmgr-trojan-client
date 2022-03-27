@@ -24,6 +24,7 @@
     "@protobuf-ts/plugin": "^2.2.2",
     "@protobuf-ts/runtime": "^2.2.2",
     "@protobuf-ts/runtime-rpc": "^2.2.2",
+    "@sentry/node": "^6.19.2",
     "commander": "^7.2.0",
     "ioredis": "^4.16.3",
     "log4js": "^6.2.1",
