@@ -162,9 +162,7 @@ const checkData = async (receive: ReceiveData): Promise<void> => {
     try {
       const result = parseResult(await receiveCommand(data))
 
-      if (config.debug) {
-        logger.debug('Result: ' + JSON.stringify(result, null, 2))
-      }
+      logger.debug('Result: ' + JSON.stringify(result, null, 2))
 
       receive.socket.end(pack({ code: 0, data: result }))
     } catch (err) {
@@ -178,7 +176,12 @@ const checkData = async (receive: ReceiveData): Promise<void> => {
     }
     if (buffer.length > length + 2) {
       checkData(receive).catch((err: Error) => {
-        Sentry.captureException(err)
+        Sentry.captureException(err, (scope) => {
+          scope.setTags({
+            phase: 'checkData',
+          })
+          return scope
+        })
         logger.error(err.message)
       })
     }
@@ -193,16 +196,31 @@ const server = createServer((socket: Socket) => {
   socket.on('data', (data: Buffer) => {
     receive.data = Buffer.concat([receive.data, data])
     checkData(receive).catch((err: Error) => {
-      Sentry.captureException(err)
+      Sentry.captureException(err, (scope) => {
+        scope.setTags({
+          phase: 'checkData',
+        })
+        return scope
+      })
       logger.error(err.message)
     })
   })
   socket.on('error', (err: Error) => {
-    Sentry.captureException(err)
+    Sentry.captureException(err, (scope) => {
+      scope.setTags({
+        phase: 'socket:error',
+      })
+      return scope
+    })
     logger.error('Socket error: ', err.message)
   })
 }).on('error', (err: Error) => {
-  Sentry.captureException(err)
+  Sentry.captureException(err, (scope) => {
+    scope.setTags({
+      phase: 'server:error',
+    })
+    return scope
+  })
   logger.error('TCP server error: ', err.message)
 })
 
@@ -225,6 +243,12 @@ const startServer = async (): Promise<void> => {
 startServer().catch((e) => {
   if (e instanceof Error) {
     logger.error(e.message)
+    Sentry.captureException(e, (scope) => {
+      scope.setTags({
+        phase: 'startServer',
+      })
+      return scope
+    })
   } else {
     logger.error(e)
   }
