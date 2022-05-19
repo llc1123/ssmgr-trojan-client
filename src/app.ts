@@ -121,8 +121,7 @@ const checkData = async (receive: ReceiveData): Promise<void> => {
       length.toString(16).padStart(8, '0'),
       'hex',
     )
-    const pack = Buffer.concat([lengthBuffer, dataBuffer])
-    return pack
+    return Buffer.concat([lengthBuffer, dataBuffer])
   }
 
   const checkCode = (data: Buffer, code: Buffer): boolean => {

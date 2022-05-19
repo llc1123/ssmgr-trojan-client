@@ -1,6 +1,5 @@
 import { Socket } from 'net'
 import { Version } from './version'
-import { EDbType } from './db-client/types'
 
 export enum ECommand {
   List = 'list',
@@ -24,11 +23,6 @@ export interface UserFlow {
   sumFlow: number
 }
 
-export interface UserData {
-  acctId: number
-  data: string
-}
-
 export interface ParsedVersion {
   version: Version
 }
@@ -45,10 +39,6 @@ export interface Config {
   addr: string
   port: number
   key: string
-  dbType: EDbType
-  dbAddr: string
-  dbPort: number
-  dbName: string
-  dbUser: string
-  dbPassword: string
+  apiHost: string
+  apiPort: number
 }

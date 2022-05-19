@@ -12,7 +12,7 @@ A [shadowsocks-manager](https://github.com/shadowsocks/shadowsocks-manager) s-no
 **Support [trojan-gfw/trojan](https://github.com/trojan-gfw/trojan) only.**
 
 ## Prerequisites
-- Node.js >= 12.0
+- Node.js >= 14.0
 - shadowsocks-manager >= 0.36.0
 
 ## Installation
@@ -25,14 +25,10 @@ npm -g i @royli/ssmgr-trojan-client
 Usage: ssmgr-trojan-client [options]
 
 Options:
-  -d, --debug                       verbose output for debug infomation (default: false)
-  -l, --listen-address <addr:port>  listening address for manager (default: 0.0.0.0:4001)
+  -l, --listen-address <addr:port>  listening address for this client (default: 0.0.0.0:4001)
   -k, --key <password>              ssmgr client password
-  --db-type <type>                  database type (redis/mysql) (default: redis)
-  --db-address <addr:port>          database address (default: localhost:6379(redis)/localhost:3306(mysql))
-  --db-name <database>              (mysql only) database name (default: trojan)
-  --db-user <username>              (mysql only) database username (defualt: trojan)
-  --db-password <password>          database password (default: none)
+  --api <addr:port>                 trojan-go API address
+  -d, --debug                       verbose output for debugging (default: false)
   -h, --help                        display help for command
 ```
 

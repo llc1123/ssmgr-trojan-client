@@ -1,7 +1,7 @@
 {
   "name": "@royli/ssmgr-trojan-client",
   "version": "1.1.4",
-  "description": "ssmgr client for trojan",
+  "description": "ssmgr client for trojan-go",
   "main": "dist/app.js",
   "bin": {
     "ssmgr-trojan-client": "./bin/ssmgr-trojan-client"
@@ -15,7 +15,7 @@
     "clean": "rimraf dist",
     "prepublishOnly": "npm run build"
   },
-  "author": "llc1123",
+  "author": "Roy Li<me@royli.dev>",
   "license": "MIT",
   "repository": "https://github.com/llc1123/ssmgr-trojan-client",
   "dependencies": {
@@ -26,9 +26,7 @@
     "@protobuf-ts/runtime-rpc": "^2.4.0",
     "@sentry/node": "^6.19.3",
     "commander": "^7.2.0",
-    "ioredis": "^4.16.3",
     "log4js": "^6.4.4",
-    "promise-mysql": "^5.0.1",
     "rimraf": "^3.0.2"
   },
   "devDependencies": {
