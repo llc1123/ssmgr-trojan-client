@@ -4,19 +4,29 @@ jobs:
   build:
     strategy:
       matrix:
-        node-version: [14.x]
-        platform: [ubuntu-latest, windows-latest]
+        node-version: [16]
+        platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
+
     steps:
-    - name: Set git to use LF
-      run: git config --global core.autocrlf false
     - name: Checkout code
       uses: actions/checkout@v2
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: node_modules
+        key: ${{ runner.OS }}-build-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.OS }}-build-${{ env.cache-name }}-
+          ${{ runner.OS }}-build-
+          ${{ runner.OS }}-
     - name: Install Packages
       run: npm install
-    - name: Build
-      run: npx tsc
+    - name: Test and build
+      run: |
+        npm run lint
+        npm run build

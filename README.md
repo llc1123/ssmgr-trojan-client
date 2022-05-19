@@ -12,7 +12,7 @@ A [shadowsocks-manager](https://github.com/shadowsocks/shadowsocks-manager) s-no
 **Support [trojan-gfw/trojan](https://github.com/trojan-gfw/trojan) only.**
 
 ## Prerequisites
-- Node.js >= 14.0
+- Node.js >= 16.0
 - shadowsocks-manager >= 0.36.0
 
 ## Installation
