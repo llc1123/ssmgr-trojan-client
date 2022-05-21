@@ -5,7 +5,7 @@ import { pipeline } from 'stream';
 import { promisify } from 'util'
 
 const streamPipeline = promisify(pipeline);
-const version = argv._[1] || 'latest'
+const version = argv._[1] || process.env.INSTALL_TROJAN_VERSION || 'latest'
 const tmpFolder = path.join(os.tmpdir(), 'ssmgr-trojan-client')
 const osPlatform = os.platform().toLowerCase()
 const osArch = os.arch().toLowerCase()
