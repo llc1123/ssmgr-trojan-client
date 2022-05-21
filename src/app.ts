@@ -12,6 +12,7 @@ import {
   UserIdPwd,
   ParsedResult,
 } from './types'
+import { assertNever } from './utils'
 import { version } from './version'
 import { DBClientResult } from './db-client/types'
 
@@ -64,19 +65,20 @@ const receiveCommand = async (data: Buffer): Promise<DBClientResult> => {
     ...JSON.parse(data.slice(6).toString()),
   }
   logger.info('Message received: ' + JSON.stringify(message))
+
   switch (message.command) {
     case ECommand.List:
-      return await dbClient.listAccounts()
+      return dbClient.listAccounts()
     case ECommand.Add:
-      return await dbClient.addAccount(message.port, message.password)
+      return dbClient.addAccount(message.port, message.password)
     case ECommand.Delete:
-      return await dbClient.removeAccount(message.port)
+      return dbClient.removeAccount(message.port)
     case ECommand.Flow:
-      return await dbClient.getFlow(message.options)
+      return dbClient.getFlow(message.options)
     case ECommand.Version:
       return { type: ECommand.Version, version: version }
     default:
-      throw new Error('Invalid command: ' + message.command)
+      return assertNever(message.command)
   }
 }
 
@@ -159,14 +161,22 @@ const checkData = async (receive: ReceiveData): Promise<void> => {
       return
     }
     try {
-      const result = parseResult(await receiveCommand(data))
+      const rawResult = await receiveCommand(data).catch((err: Error) => {
+        Sentry.captureException(err, (scope) => {
+          scope.setTags({
+            phase: 'receiveCommand',
+          })
+          return scope
+        })
+        throw new Error(`Query error on '${rawResult.type}': ${err.message}`)
+      })
+      const result = parseResult(rawResult)
 
       logger.debug('Result: ' + JSON.stringify(result, null, 2))
 
       receive.socket.end(pack({ code: 0, data: result }))
     } catch (err) {
       if (err instanceof Error) {
-        Sentry.captureException(err)
         logger.error(err.message)
         receive.socket.end(
           pack({ code: err.message === 'Invalid command' ? 1 : -1 }),

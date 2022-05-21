@@ -37,180 +37,148 @@ export class APIClient extends DBClient {
   }
 
   public async listAccounts(): Promise<ListResult> {
-    try {
-      const streamingCall = this.cl.listUsers({})
-      const accounts: Array<{
-        id: number
-        password: string
-      }> = []
+    const streamingCall = this.cl.listUsers({})
+    const accounts: Array<{
+      id: number
+      password: string
+    }> = []
 
-      for await (const user of streamingCall.responses) {
-        const { status } = user
-        const hash = status?.user?.hash
+    for await (const user of streamingCall.responses) {
+      const { status } = user
+      const hash = status?.user?.hash
 
-        if (!hash) continue
+      if (!hash) continue
 
-        const account = passwordHashToAccountMap.get(hash)
+      const account = passwordHashToAccountMap.get(hash)
 
-        if (!account) continue
+      if (!account) continue
 
-        accounts.push({
-          id: account.accountId,
-          password: hash,
-        })
-      }
-
-      await streamingCall.status
-
-      return { type: ECommand.List, data: accounts }
-    } catch (e) {
-      if (e instanceof Error) {
-        Sentry.captureException(e)
-        throw new Error("Query error on 'list': " + e.message)
-      }
-      throw new Error("Query error on 'list': " + e)
+      accounts.push({
+        id: account.accountId,
+        password: hash,
+      })
     }
+
+    await streamingCall.status
+
+    return { type: ECommand.List, data: accounts }
   }
 
   public async addAccount(
     acctId: number,
     passwordHash: string,
   ): Promise<AddResult> {
-    try {
-      const duplexCall = this.cl.setUsers()
+    const duplexCall = this.cl.setUsers()
 
-      await duplexCall.requests.send({
-        operation: SetUsersRequest_Operation.Add,
-        status: {
-          ipLimit: 0,
-          ipCurrent: 0,
-          user: {
-            password: '',
-            hash: passwordHash,
-          },
+    await duplexCall.requests.send({
+      operation: SetUsersRequest_Operation.Add,
+      status: {
+        ipLimit: 0,
+        ipCurrent: 0,
+        user: {
+          password: '',
+          hash: passwordHash,
         },
-      })
+      },
+    })
 
-      await duplexCall.requests.complete()
+    await duplexCall.requests.complete()
 
-      await duplexCall.status
+    await duplexCall.status
 
-      passwordHashToAccountMap.set(passwordHash, {
-        accountId: acctId,
-      })
-      accountIdToPasswordHashMap.set(acctId, passwordHash)
+    passwordHashToAccountMap.set(passwordHash, {
+      accountId: acctId,
+    })
+    accountIdToPasswordHashMap.set(acctId, passwordHash)
 
-      return { type: ECommand.Add, id: acctId }
-    } catch (e) {
-      if (e instanceof Error) {
-        Sentry.captureException(e)
-        throw new Error("Query error on 'add': " + e.message)
-      }
-      throw new Error("Query error on 'add': " + e)
-    }
+    return { type: ECommand.Add, id: acctId }
   }
 
   public async removeAccount(acctId: number): Promise<RemoveResult> {
-    try {
-      const duplexCall = this.cl.setUsers()
-      const passwordHash = accountIdToPasswordHashMap.get(acctId)
+    const duplexCall = this.cl.setUsers()
+    const passwordHash = accountIdToPasswordHashMap.get(acctId)
 
-      if (!passwordHash) {
-        throw new Error('Could not find the account ' + acctId)
-      }
-
-      await duplexCall.requests.send({
-        operation: SetUsersRequest_Operation.Delete,
-        status: {
-          ipLimit: 0,
-          ipCurrent: 0,
-          user: {
-            hash: passwordHash,
-            password: '',
-          },
-        },
-      })
-
-      await duplexCall.requests.complete()
-
-      await duplexCall.status
-
-      accountIdToPasswordHashMap.delete(acctId)
-      passwordHashToAccountMap.delete(passwordHash)
-
-      return { type: ECommand.Delete, id: acctId }
-    } catch (e) {
-      if (e instanceof Error) {
-        Sentry.captureException(e)
-        throw new Error("Query error on 'del': " + e.message)
-      }
-      throw new Error("Query error on 'del': " + e)
+    if (!passwordHash) {
+      throw new Error('Could not find the account ' + acctId)
     }
+
+    await duplexCall.requests.send({
+      operation: SetUsersRequest_Operation.Delete,
+      status: {
+        ipLimit: 0,
+        ipCurrent: 0,
+        user: {
+          hash: passwordHash,
+          password: '',
+        },
+      },
+    })
+
+    await duplexCall.requests.complete()
+
+    await duplexCall.status
+
+    accountIdToPasswordHashMap.delete(acctId)
+    passwordHashToAccountMap.delete(passwordHash)
+
+    return { type: ECommand.Delete, id: acctId }
   }
 
   public async getFlow(options: { clear?: boolean } = {}): Promise<FlowResult> {
-    try {
-      const streamingCall = this.cl.listUsers({})
-      const accounts: Array<{
-        id: number
-        flow: number
-      }> = []
+    const streamingCall = this.cl.listUsers({})
+    const accounts: Array<{
+      id: number
+      flow: number
+    }> = []
 
-      for await (const user of streamingCall.responses) {
-        const { status } = user
-        const hash = status?.user?.hash
-        const upload = status?.trafficTotal?.uploadTraffic
-        const download = status?.trafficTotal?.downloadTraffic
+    for await (const user of streamingCall.responses) {
+      const { status } = user
+      const hash = status?.user?.hash
+      const upload = status?.trafficTotal?.uploadTraffic
+      const download = status?.trafficTotal?.downloadTraffic
 
-        if (!hash) continue
+      if (!hash) continue
 
-        const account = passwordHashToAccountMap.get(hash)
+      const account = passwordHashToAccountMap.get(hash)
 
-        if (!account) continue
+      if (!account) continue
 
-        const uploadInNumber = upload ? Number(upload) : 0
-        const downloadInNumber = download ? Number(download) : 0
+      const uploadInNumber = upload ? Number(upload) : 0
+      const downloadInNumber = download ? Number(download) : 0
 
-        accounts.push({
-          id: account.accountId,
-          flow: downloadInNumber + uploadInNumber,
+      accounts.push({
+        id: account.accountId,
+        flow: downloadInNumber + uploadInNumber,
+      })
+
+      if (options.clear) {
+        const setUserCall = this.cl.setUsers()
+
+        await setUserCall.requests.send({
+          operation: SetUsersRequest_Operation.Modify,
+          status: {
+            ipLimit: 0,
+            ipCurrent: 0,
+            user: {
+              password: '',
+              hash,
+            },
+            trafficTotal: {
+              uploadTraffic: 0n,
+              downloadTraffic: 0n,
+            },
+          },
         })
 
-        if (options.clear) {
-          const setUserCall = this.cl.setUsers()
+        await setUserCall.requests.complete()
 
-          await setUserCall.requests.send({
-            operation: SetUsersRequest_Operation.Modify,
-            status: {
-              ipLimit: 0,
-              ipCurrent: 0,
-              user: {
-                password: '',
-                hash,
-              },
-              trafficTotal: {
-                uploadTraffic: 0n,
-                downloadTraffic: 0n,
-              },
-            },
-          })
-
-          await setUserCall.requests.complete()
-
-          await setUserCall.status
-        }
+        await setUserCall.status
       }
-
-      await streamingCall.status
-
-      return { type: ECommand.Flow, data: accounts }
-    } catch (e) {
-      if (e instanceof Error) {
-        Sentry.captureException(e)
-        throw new Error("Query error on 'flow': " + e.message)
-      }
-      throw new Error("Query error on 'flow': " + e)
     }
+
+    await streamingCall.status
+
+    return { type: ECommand.Flow, data: accounts }
   }
 
   public disconnect(): void {
