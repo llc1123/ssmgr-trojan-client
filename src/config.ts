@@ -5,9 +5,10 @@ const parseConfig = (): Config => {
   const options = program.opts()
 
   program
-    .requiredOption(
+    .option(
       '-l, --listen-address <addr:port>',
       'listening address for this client (default: 0.0.0.0:4001)',
+      '0.0.0.0:4001',
     )
     .requiredOption('-k, --key <password>', 'ssmgr client password')
     .requiredOption('--api <addr:port>', 'trojan-go API address')
