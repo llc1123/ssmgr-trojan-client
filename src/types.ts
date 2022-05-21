@@ -34,6 +34,11 @@ export interface ReceiveData {
   socket: Socket
 }
 
+export interface CommandMessage {
+  command?: ECommand
+  [key: string]: any
+}
+
 export interface Config {
   debug: boolean
   addr: string

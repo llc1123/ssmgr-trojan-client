@@ -1,6 +1,6 @@
 import { Socket, createServer } from 'net'
-import { createHash } from 'crypto'
 
+import { pack, checkCode } from './socket'
 import { logger } from './logger'
 import { DBClient, initDB } from './db-client/db'
 import { parseConfig, Config } from './config'
@@ -11,6 +11,7 @@ import {
   UserFlow,
   UserIdPwd,
   ParsedResult,
+  CommandMessage,
 } from './types'
 import { assertNever } from './utils'
 import { version } from './version'
@@ -47,8 +48,10 @@ let dbClient: DBClient
  *    return type:
  *      { type: 'version', version: version<string> }
  */
-const receiveCommand = async (data: Buffer): Promise<DBClientResult> => {
-  interface CommandMessage {
+const receiveCommand = async (
+  data: CommandMessage,
+): Promise<DBClientResult> => {
+  interface MergedCommandMessage {
     command: ECommand
     port: number
     password: string
@@ -58,11 +61,11 @@ const receiveCommand = async (data: Buffer): Promise<DBClientResult> => {
     [key: string]: any
   }
 
-  const message: CommandMessage = {
+  const message: MergedCommandMessage = {
     command: ECommand.Version,
     port: 0,
     password: '',
-    ...JSON.parse(data.slice(6).toString()),
+    ...data,
   }
   logger.info('Message received: ' + JSON.stringify(message))
 
@@ -110,65 +113,40 @@ const parseResult = (result: DBClientResult): ParsedResult => {
 }
 
 const checkData = async (receive: ReceiveData): Promise<void> => {
-  interface PackData {
-    code: number
-    data?: ParsedResult
-  }
-
-  const pack = (data: PackData): Buffer => {
-    const message = JSON.stringify(data)
-    const dataBuffer = Buffer.from(message)
-    const length = dataBuffer.length
-    const lengthBuffer = Buffer.from(
-      length.toString(16).padStart(8, '0'),
-      'hex',
-    )
-    return Buffer.concat([lengthBuffer, dataBuffer])
-  }
-
-  const checkCode = (data: Buffer, code: Buffer): boolean => {
-    const time = Number.parseInt(data.slice(0, 6).toString('hex'), 16)
-    if (Math.abs(Date.now() - time) > 10 * 60 * 1000) {
-      logger.warn('Invalid message: Timed out.')
-      return false
-    }
-    const command = data.slice(6).toString()
-    const hash = createHash('md5')
-      .update(time + command + config.key)
-      .digest('hex')
-      .substr(0, 8)
-    if (hash === code.toString('hex')) {
-      return true
-    } else {
-      logger.warn('Invalid message: Hash mismatch. (Incorrect password)')
-      return false
-    }
-  }
-
   const buffer = receive.data
   let length = 0
   let data: Buffer
   let code: Buffer
+
   if (buffer.length < 2) {
     return
   }
+
   length = buffer[0] * 256 + buffer[1]
+
   if (buffer.length >= length + 2) {
     data = buffer.slice(2, length - 2)
     code = buffer.slice(length - 2)
-    if (!checkCode(data, code)) {
+
+    if (!checkCode(config.key, data, code)) {
       receive.socket.end(pack({ code: 2 }))
       return
     }
+
     try {
-      const rawResult = await receiveCommand(data).catch((err: Error) => {
+      const payload = JSON.parse(data.slice(6).toString()) as CommandMessage
+      const rawResult = await receiveCommand(payload).catch((err: Error) => {
         Sentry.captureException(err, (scope) => {
           scope.setTags({
             phase: 'receiveCommand',
           })
           return scope
         })
-        throw new Error(`Query error on '${rawResult.type}': ${err.message}`)
+        if (payload.command) {
+          throw new Error(`Query error on '${payload.command}': ${err.message}`)
+        } else {
+          throw new Error(`Query error: ${err.message}`)
+        }
       })
       const result = parseResult(rawResult)
 
@@ -178,21 +156,11 @@ const checkData = async (receive: ReceiveData): Promise<void> => {
     } catch (err) {
       if (err instanceof Error) {
         logger.error(err.message)
+
         receive.socket.end(
           pack({ code: err.message === 'Invalid command' ? 1 : -1 }),
         )
       }
-    }
-    if (buffer.length > length + 2) {
-      checkData(receive).catch((err: Error) => {
-        Sentry.captureException(err, (scope) => {
-          scope.setTags({
-            phase: 'checkData',
-          })
-          return scope
-        })
-        logger.error(err.message)
-      })
     }
   }
 }
@@ -202,8 +170,10 @@ const server = createServer((socket: Socket) => {
     data: Buffer.from(''),
     socket,
   }
+
   socket.on('data', (data: Buffer) => {
     receive.data = Buffer.concat([receive.data, data])
+
     checkData(receive).catch((err: Error) => {
       Sentry.captureException(err, (scope) => {
         scope.setTags({
@@ -214,6 +184,7 @@ const server = createServer((socket: Socket) => {
       logger.error(err.message)
     })
   })
+
   socket.on('error', (err: Error) => {
     Sentry.captureException(err, (scope) => {
       scope.setTags({
