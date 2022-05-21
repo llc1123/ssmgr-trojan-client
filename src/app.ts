@@ -1,10 +1,13 @@
+import { ExecaChildProcess } from 'execa'
 import { Socket, createServer } from 'net'
+import onDeath from 'death'
 
 import { pack, checkCode } from './socket'
 import { logger } from './logger'
 import { DBClient, initDB } from './db-client/db'
 import { parseConfig, Config } from './config'
 import Sentry from './sentry'
+import { startTrojan } from './trojan'
 import {
   ReceiveData,
   ECommand,
@@ -19,6 +22,7 @@ import { DBClientResult } from './db-client/types'
 
 let config: Config
 let dbClient: DBClient
+let trojanProcess: ExecaChildProcess | null = null
 
 /**
  * @param data command message buffer
@@ -208,10 +212,26 @@ const startServer = async (): Promise<void> => {
   logger.info(`Running ssmgr-trojan-client v${version}`)
 
   config = parseConfig()
+
   if (config.debug) {
     logger.level = 'debug'
   }
+
   logger.debug(JSON.stringify(config))
+
+  if (config.trojanConfig) {
+    trojanProcess = startTrojan(config.trojanConfig)
+
+    trojanProcess.on('exit', (code) => {
+      if (code === 1) {
+        logger.error(`trojan-go process exited with code ${code}`)
+        dbClient.disconnect()
+        server.close()
+
+        process.exit(1)
+      }
+    })
+  }
 
   dbClient = await initDB(config)
 
@@ -234,4 +254,13 @@ startServer().catch((e) => {
   }
   logger.error('FATAL ERROR. TERMINATED.')
   process.exit(1)
+})
+
+onDeath({ debug: true, uncaughtException: false })((signal) => {
+  logger.info(`Received ${signal}. Terminating the service...`)
+  if (trojanProcess) {
+    trojanProcess.kill(0)
+  }
+  dbClient.disconnect()
+  server.close()
 })

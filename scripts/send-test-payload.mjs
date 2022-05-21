@@ -1,3 +1,9 @@
+#!/usr/bin/env zx
+
+/**
+ * https://shadowsocks.github.io/shadowsocks-manager/#/ssmgrapi
+ */
+
 import net from 'net'
 import crypto from 'crypto'
 
@@ -78,5 +84,13 @@ const sendMessage = (data, options) => {
   });
 };
 
-const response = await sendMessage(JSON.parse(argv._[1]), {host: 'localhost', port: '4001', password: '123456'});
+const payload = JSON.parse(argv._[1])
+
+if (payload.command === 'add' || payload.command === 'del') {
+  payload.password = crypto.createHash('sha224')
+    .update(payload.password, 'utf8')
+    .digest('hex');
+}
+
+const response = await sendMessage(payload, {host: 'localhost', port: '4001', password: '123456'});
 console.log(response);

@@ -1,7 +1,7 @@
 import { createHash } from 'crypto'
 
 import { logger } from '../logger'
-import { ParsedResult } from '../types'
+import { ParsedResult } from '../types.js'
 
 interface PackData {
   code: number

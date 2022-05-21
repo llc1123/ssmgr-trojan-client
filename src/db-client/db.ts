@@ -29,7 +29,7 @@ const initDB = async (config: Config): Promise<DBClient> => {
       port: config.apiPort,
     })
     logger.info(
-      `Running in API mode. Connected to ${config.apiHost}:${config.apiPort}`,
+      `Running in API mode. API address: ${config.apiHost}:${config.apiPort}`,
     )
     return cl
   } catch (e) {

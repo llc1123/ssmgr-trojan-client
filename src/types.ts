@@ -1,4 +1,4 @@
-import { Socket } from 'net'
+import type { Socket } from 'net'
 import { Version } from './version'
 
 export enum ECommand {
@@ -46,4 +46,5 @@ export interface Config {
   key: string
   apiHost: string
   apiPort: number
+  trojanConfig?: string
 }

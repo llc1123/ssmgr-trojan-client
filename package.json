@@ -2,7 +2,6 @@
   "name": "@royli/ssmgr-trojan-client",
   "version": "1.1.4",
   "description": "ssmgr client for trojan-go",
-  "main": "dist/app.js",
   "bin": {
     "ssmgr-trojan-client": "./bin/ssmgr-trojan-client"
   },
@@ -14,10 +13,12 @@
     "ts:build": "tsc",
     "protos:update": "zx ./scripts/update-protos.mjs",
     "protos:build": "zx ./scripts/build-protos.mjs",
-    "sned-test-payload": "zx ./scripts/send-test-payload.mjs",
+    "send-test-payload": "zx ./scripts/send-test-payload.mjs",
+    "install-trojan": "zx ./scripts/install-trojan.mjs",
     "clean": "rimraf dist",
     "prepare": "run-s protos:build",
-    "prepublishOnly": "run-s build"
+    "prepublishOnly": "run-s build",
+    "postinstall": "run-s install-trojan"
   },
   "author": "Roy Li<me@royli.dev>",
   "license": "MIT",
@@ -30,11 +31,16 @@
     "@protobuf-ts/runtime-rpc": "^2.4.0",
     "@sentry/node": "^6.19.3",
     "commander": "^7.2.0",
+    "death": "^1.1.0",
+    "execa": "^5.1.0",
+    "fs-extra": "^10.1.0",
     "log4js": "^6.4.4",
     "rimraf": "^3.0.2",
+    "yaml": "^2.1.0",
     "zx": "^6.1.0"
   },
   "devDependencies": {
+    "@types/death": "^1.1.2",
     "@types/ioredis": "^4.28.10",
     "@types/node": "^16",
     "@typescript-eslint/eslint-plugin": "^5.17.0",
