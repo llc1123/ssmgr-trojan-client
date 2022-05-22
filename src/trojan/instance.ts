@@ -3,7 +3,7 @@ import os from 'os'
 import { join } from 'path'
 import { trojanLogger } from '../logger'
 
-trojanLogger.level = 'info'
+trojanLogger.level = 'debug'
 
 export const startTrojan = (configPath: string) => {
   const osPlatform = os.platform().toLowerCase()
@@ -18,17 +18,27 @@ export const startTrojan = (configPath: string) => {
 
   const bin = join(__dirname, '../../bin/trojan-go')
 
-  const trojanProcess = execa(bin, ['--config', configPath])
+  const trojanProcess = execa(bin, ['--config', configPath], {
+    all: true,
+  })
 
-  if (trojanProcess.stdout) {
-    trojanProcess.stdout.on('data', (data: Buffer) => {
+  if (trojanProcess.all) {
+    trojanProcess.all.on('data', (data: Buffer) => {
       data
         .toString()
         .split(os.EOL)
         .forEach((line: string) => {
           const log = line.trim()
           if (log.length > 0) {
-            trojanLogger.info(log)
+            if (log.includes('[FATAL]') || log.includes('[ERROR]')) {
+              trojanLogger.error(log)
+            } else if (log.includes('[WARN]')) {
+              trojanLogger.warn(log)
+            } else if (log.includes('[INFO]')) {
+              trojanLogger.info(log)
+            } else {
+              trojanLogger.debug(log)
+            }
           }
         })
     })
