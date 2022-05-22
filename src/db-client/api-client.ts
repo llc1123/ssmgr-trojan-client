@@ -45,7 +45,7 @@ export class APIClient extends DBClient {
   public async listAccounts(): Promise<ListResult> {
     const streamingCall = this.cl.listUsers({})
     const accounts: Array<{
-      id: number
+      accountId: number
       password: string
     }> = []
 
@@ -60,7 +60,7 @@ export class APIClient extends DBClient {
       if (!account) continue
 
       accounts.push({
-        id: account.accountId,
+        accountId: account.accountId,
         password: hash,
       })
     }
@@ -71,7 +71,7 @@ export class APIClient extends DBClient {
   }
 
   public async addAccount(
-    acctId: number,
+    accountId: number,
     passwordHash: string,
   ): Promise<AddResult> {
     const duplexCall = this.cl.setUsers()
@@ -93,19 +93,19 @@ export class APIClient extends DBClient {
     await duplexCall.status
 
     passwordHashToAccountMap.set(passwordHash, {
-      accountId: acctId,
+      accountId: accountId,
     })
-    accountIdToPasswordHashMap.set(acctId, passwordHash)
+    accountIdToPasswordHashMap.set(accountId, passwordHash)
 
-    return { type: ECommand.Add, id: acctId }
+    return { type: ECommand.Add, accountId: accountId }
   }
 
-  public async removeAccount(acctId: number): Promise<RemoveResult> {
+  public async removeAccount(accountId: number): Promise<RemoveResult> {
     const duplexCall = this.cl.setUsers()
-    const passwordHash = accountIdToPasswordHashMap.get(acctId)
+    const passwordHash = accountIdToPasswordHashMap.get(accountId)
 
     if (!passwordHash) {
-      throw new Error('Could not find the account ' + acctId)
+      throw new Error('Could not find the account ' + accountId)
     }
 
     await duplexCall.requests.send({
@@ -124,26 +124,30 @@ export class APIClient extends DBClient {
 
     await duplexCall.status
 
-    accountIdToPasswordHashMap.delete(acctId)
+    accountIdToPasswordHashMap.delete(accountId)
     passwordHashToAccountMap.delete(passwordHash)
 
-    return { type: ECommand.Delete, id: acctId }
+    return { type: ECommand.Delete, accountId }
   }
 
   public async changePassword(
-    acctId: number,
+    accountId: number,
     passwordHash: string,
   ): Promise<ChangePasswordResult> {
-    await this.removeAccount(acctId)
-    await this.addAccount(acctId, passwordHash)
+    await this.removeAccount(accountId)
+    await this.addAccount(accountId, passwordHash)
 
-    return { type: ECommand.ChangePassword, id: acctId, password: passwordHash }
+    return {
+      type: ECommand.ChangePassword,
+      accountId,
+      password: passwordHash,
+    }
   }
 
   public async getFlow(options: { clear?: boolean } = {}): Promise<FlowResult> {
     const streamingCall = this.cl.listUsers({})
     const accounts: Array<{
-      id: number
+      accountId: number
       flow: number
     }> = []
 
@@ -163,7 +167,7 @@ export class APIClient extends DBClient {
       const downloadInNumber = download ? Number(download) : 0
 
       accounts.push({
-        id: account.accountId,
+        accountId: account.accountId,
         flow: downloadInNumber + uploadInNumber,
       })
 

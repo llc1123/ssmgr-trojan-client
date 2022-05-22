@@ -25,32 +25,7 @@ let dbClient: DBClient
 let trojanProcess: ExecaChildProcess | null = null
 
 /**
- * @param data command message buffer
- *
- * Supported commands:
- *  list ()
- *    List current users and encoded passwords
- *    return type:
- *      { type: 'list', data: [{ id: <number>, password: password<string> }, ...] }
- *  add (acctId<number>, password<string>)
- *    Attention: Based on trojan protocol, passwords must be unique.
- *    Passwords are stored in redis in SHA224 encoding (Don't pass encoded passwords).
- *    Use this method if you want to change password.
- *    return type:
- *      { type: 'add', id: acctId<number> }
- *  del (acctId<number>)
- *    Deletes an account by the given account ID
- *    return type:
- *      { type: 'del', id: acctId<number> }
- *  flow ()
- *    Returns flow data of all accounts since last flow query (including ones having no flow).
- *    It also lets you check active accounts. (In case redis has been wiped)
- *    return type:
- *      { type: 'flow', data: [{ id: <number>, flow: flow<number> }, ...] }
- *  version ()
- *    Returns the version of this client.
- *    return type:
- *      { type: 'version', version: version<string> }
+ * https://shadowsocks.github.io/shadowsocks-manager/#/ssmgrapi
  */
 const receiveCommand = async (
   data: CommandMessage,
@@ -96,23 +71,23 @@ const parseResult = (result: DBClientResult): ParsedResult => {
     case ECommand.List:
       return result.data.map(
         (user): UserIdPwd => ({
-          port: user.id,
+          port: user.accountId,
           password: user.password,
         }),
       )
     case ECommand.Add:
-      return { port: result.id }
+      return { port: result.accountId }
     case ECommand.Delete:
-      return { port: result.id }
+      return { port: result.accountId }
     case ECommand.Flow:
       return result.data.map(
         (user): UserFlow => ({
-          port: user.id,
+          port: user.accountId,
           sumFlow: user.flow,
         }),
       )
     case ECommand.ChangePassword:
-      return { port: result.id, password: result.password }
+      return { port: result.accountId, password: result.password }
     case ECommand.Version:
       return { version: result.version }
     default:

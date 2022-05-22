@@ -16,14 +16,14 @@ abstract class DBClient {
   public abstract listAccounts(): Promise<ListResult>
 
   public abstract addAccount(
-    acctId: number,
+    accountId: number,
     password: string,
   ): Promise<AddResult>
 
-  public abstract removeAccount(acctId: number): Promise<RemoveResult>
+  public abstract removeAccount(accountId: number): Promise<RemoveResult>
 
   public abstract changePassword(
-    acctId: number,
+    accountId: number,
     password: string,
   ): Promise<ChangePasswordResult>
 
