@@ -1,24 +1,24 @@
-import { ExecaChildProcess } from 'execa'
-import { Socket, createServer } from 'net'
 import onDeath from 'death'
-
-import { pack, checkCode } from './socket'
-import { logger } from './logger'
+import { ExecaChildProcess } from 'execa'
+import { createServer, Socket } from 'net'
+import { Config, parseConfig } from './config'
 import { DBClient, initDB } from './db-client/db'
-import { parseConfig, Config } from './config'
+import { DBClientResult } from './db-client/types'
+import { logger } from './logger'
 import Sentry from './sentry'
+
+import { checkCode, pack } from './socket'
 import { startTrojan } from './trojan'
 import {
-  ReceiveData,
+  CommandMessage,
   ECommand,
+  ParsedResult,
+  ReceiveData,
   UserFlow,
   UserIdPwd,
-  ParsedResult,
-  CommandMessage,
 } from './types'
 import { assertNever } from './utils'
 import { version } from './version'
-import { DBClientResult } from './db-client/types'
 
 let config: Config
 let dbClient: DBClient
@@ -82,6 +82,8 @@ const receiveCommand = async (
       return dbClient.removeAccount(message.port)
     case ECommand.Flow:
       return dbClient.getFlow(message.options)
+    case ECommand.ChangePassword:
+      return dbClient.changePassword(message.port, message.password)
     case ECommand.Version:
       return { type: ECommand.Version, version: version }
     default:
@@ -109,10 +111,12 @@ const parseResult = (result: DBClientResult): ParsedResult => {
           sumFlow: user.flow,
         }),
       )
+    case ECommand.ChangePassword:
+      return { port: result.id, password: result.password }
     case ECommand.Version:
       return { version: result.version }
     default:
-      throw new Error('Invalid command')
+      return assertNever(result)
   }
 }
 

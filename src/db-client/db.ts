@@ -1,7 +1,13 @@
 import { Config } from '../types'
 import { logger } from '../logger'
 import Sentry from '../sentry'
-import { AddResult, FlowResult, ListResult, RemoveResult } from './types'
+import {
+  AddResult,
+  ChangePasswordResult,
+  FlowResult,
+  ListResult,
+  RemoveResult,
+} from './types'
 
 /**
  * Database Client Abstract Class
@@ -15,6 +21,11 @@ abstract class DBClient {
   ): Promise<AddResult>
 
   public abstract removeAccount(acctId: number): Promise<RemoveResult>
+
+  public abstract changePassword(
+    acctId: number,
+    password: string,
+  ): Promise<ChangePasswordResult>
 
   public abstract getFlow(options?: { clear?: boolean }): Promise<FlowResult>
 

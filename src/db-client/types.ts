@@ -27,6 +27,12 @@ export interface FlowResult {
   }[]
 }
 
+export interface ChangePasswordResult {
+  type: typeof ECommand.ChangePassword
+  id: number
+  password: string
+}
+
 export interface VersionResult {
   type: typeof ECommand.Version
   version: Version
@@ -38,3 +44,4 @@ export type DBClientResult =
   | RemoveResult
   | FlowResult
   | VersionResult
+  | ChangePasswordResult

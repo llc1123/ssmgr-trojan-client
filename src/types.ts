@@ -7,6 +7,7 @@ export enum ECommand {
   Delete = 'del',
   Flow = 'flow',
   Version = 'version',
+  ChangePassword = 'pwd',
 }
 
 export interface UserId {
@@ -27,7 +28,12 @@ export interface ParsedVersion {
   version: Version
 }
 
-export type ParsedResult = UserId | UserIdPwd[] | UserFlow[] | ParsedVersion
+export type ParsedResult =
+  | UserId
+  | UserIdPwd[]
+  | UserFlow[]
+  | ParsedVersion
+  | UserIdPwd
 
 export interface ReceiveData {
   data: Buffer

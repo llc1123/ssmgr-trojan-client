@@ -5,7 +5,13 @@ import { SetUsersRequest_Operation } from '../protobuf/api'
 import { TrojanServerServiceClient } from '../protobuf/api.client'
 import { ECommand } from '../types'
 import { DBClient } from './db'
-import { AddResult, FlowResult, ListResult, RemoveResult } from './types'
+import {
+  AddResult,
+  ChangePasswordResult,
+  FlowResult,
+  ListResult,
+  RemoveResult,
+} from './types'
 
 interface APIClientProps {
   host: string
@@ -122,6 +128,16 @@ export class APIClient extends DBClient {
     passwordHashToAccountMap.delete(passwordHash)
 
     return { type: ECommand.Delete, id: acctId }
+  }
+
+  public async changePassword(
+    acctId: number,
+    passwordHash: string,
+  ): Promise<ChangePasswordResult> {
+    await this.removeAccount(acctId)
+    await this.addAccount(acctId, passwordHash)
+
+    return { type: ECommand.ChangePassword, id: acctId, password: passwordHash }
   }
 
   public async getFlow(options: { clear?: boolean } = {}): Promise<FlowResult> {
