@@ -1,12 +1,13 @@
 import onDeath from 'death'
 import { ExecaChildProcess } from 'execa'
 import { createServer, Socket } from 'net'
-import { Config, parseConfig } from './config'
-import { DBClient, initDB } from './db-client/db'
-import { DBClientResult } from './db-client/types'
+
+import { Config, getConfig } from './config'
+import { getDatabase } from './db'
+import { getClient } from './api-client'
+import type { APIClient, APIClientResult } from './api-client'
 import { logger } from './logger'
 import Sentry from './sentry'
-
 import { checkCode, pack } from './socket'
 import { startTrojan } from './trojan'
 import {
@@ -19,9 +20,10 @@ import {
 } from './types'
 import { assertNever } from './utils'
 import { version } from './version'
+import './models'
 
 let config: Config
-let dbClient: DBClient
+let trojanClient: APIClient
 let trojanProcess: ExecaChildProcess | null = null
 
 /**
@@ -29,7 +31,7 @@ let trojanProcess: ExecaChildProcess | null = null
  */
 const receiveCommand = async (
   data: CommandMessage,
-): Promise<DBClientResult> => {
+): Promise<APIClientResult> => {
   interface MergedCommandMessage {
     command: ECommand
     port: number
@@ -50,15 +52,15 @@ const receiveCommand = async (
 
   switch (message.command) {
     case ECommand.List:
-      return dbClient.listAccounts()
+      return trojanClient.listAccounts()
     case ECommand.Add:
-      return dbClient.addAccount(message.port, message.password)
+      return trojanClient.addAccount(message.port, message.password)
     case ECommand.Delete:
-      return dbClient.removeAccount(message.port)
+      return trojanClient.removeAccount(message.port)
     case ECommand.Flow:
-      return dbClient.getFlow(message.options)
+      return trojanClient.getFlow(message.options)
     case ECommand.ChangePassword:
-      return dbClient.changePassword(message.port, message.password)
+      return trojanClient.changePassword(message.port, message.password)
     case ECommand.Version:
       return { type: ECommand.Version, version: version }
     default:
@@ -66,7 +68,7 @@ const receiveCommand = async (
   }
 }
 
-const parseResult = (result: DBClientResult): ParsedResult => {
+const parseResult = (result: APIClientResult): ParsedResult => {
   switch (result.type) {
     case ECommand.List:
       return result.data.map(
@@ -190,7 +192,11 @@ const server = createServer((socket: Socket) => {
 const startServer = async (): Promise<void> => {
   logger.info(`Running ssmgr-trojan-client v${version}`)
 
-  config = parseConfig()
+  const database = getDatabase()
+  await database.authenticate()
+  await database.sync()
+
+  config = getConfig()
 
   if (config.debug) {
     logger.level = 'debug'
@@ -198,21 +204,56 @@ const startServer = async (): Promise<void> => {
 
   logger.debug(JSON.stringify(config))
 
+  trojanClient = await getClient(config)
+
   if (config.trojanConfig) {
     trojanProcess = startTrojan(config.trojanConfig)
 
     trojanProcess.on('exit', (code) => {
       if (code === 1) {
         logger.error(`trojan-go process exited with code ${code}`)
-        dbClient.disconnect()
+        trojanClient.disconnect()
         server.close()
 
         process.exit(1)
       }
     })
-  }
 
-  dbClient = await initDB(config)
+    trojanProcess.once('api-service-ready', () => {
+      trojanClient
+        .init({
+          onTickError: (err) => {
+            Sentry.captureException(err, (scope) => {
+              scope.setTags({
+                phase: 'trojanClient:onTickError',
+              })
+              return scope
+            })
+          },
+        })
+        .catch((err) => {
+          Sentry.captureException(err, (scope) => {
+            scope.setTags({
+              phase: 'trojanClient:init',
+            })
+            return scope
+          })
+
+          throw err
+        })
+    })
+  } else {
+    await trojanClient.init({
+      onTickError: (err) => {
+        Sentry.captureException(err, (scope) => {
+          scope.setTags({
+            phase: 'trojanClient:onTickError',
+          })
+          return scope
+        })
+      },
+    })
+  }
 
   server.listen(config.port, config.addr, () => {
     logger.info(`Listening on ${config.addr}:${config.port}`)
@@ -235,11 +276,22 @@ startServer().catch((e) => {
   process.exit(1)
 })
 
-onDeath({ debug: true, uncaughtException: false })((signal) => {
-  logger.info(`Received ${signal}. Terminating the service...`)
+onDeath({ uncaughtException: true })((signal) => {
+  if (signal instanceof Error) {
+    logger.error(signal)
+    logger.error('An uncaught error occurred. Terminating the service...')
+  } else {
+    logger.info(`Received ${signal}. Terminating the service...`)
+  }
+
+  trojanClient.disconnect()
   if (trojanProcess) {
     trojanProcess.kill(0)
   }
-  dbClient.disconnect()
   server.close()
+  getDatabase()
+    .close()
+    .then(() => {
+      process.exit(0)
+    })
 })

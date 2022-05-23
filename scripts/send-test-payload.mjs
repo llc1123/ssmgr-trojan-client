@@ -86,7 +86,7 @@ const sendMessage = (data, options) => {
 
 const payload = JSON.parse(argv._[1])
 
-if (payload.command === 'add' || payload.command === 'del') {
+if (payload.command === 'add' || payload.command === 'del' || payload.command === 'pwd') {
   payload.password = crypto.createHash('sha224')
     .update(payload.password, 'utf8')
     .digest('hex');

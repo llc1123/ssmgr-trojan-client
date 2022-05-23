@@ -3,36 +3,17 @@ import { GrpcTransport } from '@protobuf-ts/grpc-transport'
 
 import { SetUsersRequest_Operation } from '../protobuf/api'
 import { TrojanServerServiceClient } from '../protobuf/api.client'
-import { ECommand } from '../types'
-import { DBClient } from './db'
-import {
-  AddResult,
-  ChangePasswordResult,
-  FlowResult,
-  ListResult,
-  RemoveResult,
-} from './types'
 
-interface APIClientProps {
+interface TrojanManagerProps {
   host: string
   port: number
 }
 
-const passwordHashToAccountMap = new Map<
-  string,
-  {
-    accountId: number
-  }
->()
-const accountIdToPasswordHashMap = new Map<number, string>()
-
-export class APIClient extends DBClient {
+export class TrojanManager {
   private cl: TrojanServerServiceClient
-  private transport: GrpcTransport
+  private readonly transport: GrpcTransport
 
-  constructor({ host, port }: APIClientProps) {
-    super()
-
+  constructor({ host, port }: TrojanManagerProps) {
     this.transport = new GrpcTransport({
       host: `${host}:${port}`,
       channelCredentials: ChannelCredentials.createInsecure(),
@@ -42,12 +23,9 @@ export class APIClient extends DBClient {
     this.cl = new TrojanServerServiceClient(this.transport)
   }
 
-  public async listAccounts(): Promise<ListResult> {
+  public async listAccounts(): Promise<string[]> {
     const streamingCall = this.cl.listUsers({})
-    const accounts: Array<{
-      accountId: number
-      password: string
-    }> = []
+    const accounts = []
 
     for await (const user of streamingCall.responses) {
       const { status } = user
@@ -55,25 +33,13 @@ export class APIClient extends DBClient {
 
       if (!hash) continue
 
-      const account = passwordHashToAccountMap.get(hash)
-
-      if (!account) continue
-
-      accounts.push({
-        accountId: account.accountId,
-        password: hash,
-      })
+      accounts.push(hash)
     }
 
-    await streamingCall.status
-
-    return { type: ECommand.List, data: accounts }
+    return accounts
   }
 
-  public async addAccount(
-    accountId: number,
-    passwordHash: string,
-  ): Promise<AddResult> {
+  public async addAccount(passwordHash: string): Promise<void> {
     const duplexCall = this.cl.setUsers()
 
     await duplexCall.requests.send({
@@ -82,8 +48,8 @@ export class APIClient extends DBClient {
         ipLimit: 0,
         ipCurrent: 0,
         user: {
-          password: '',
           hash: passwordHash,
+          password: '',
         },
       },
     })
@@ -91,22 +57,10 @@ export class APIClient extends DBClient {
     await duplexCall.requests.complete()
 
     await duplexCall.status
-
-    passwordHashToAccountMap.set(passwordHash, {
-      accountId: accountId,
-    })
-    accountIdToPasswordHashMap.set(accountId, passwordHash)
-
-    return { type: ECommand.Add, accountId: accountId }
   }
 
-  public async removeAccount(accountId: number): Promise<RemoveResult> {
+  public async removeAccount(passwordHash: string): Promise<void> {
     const duplexCall = this.cl.setUsers()
-    const passwordHash = accountIdToPasswordHashMap.get(accountId)
-
-    if (!passwordHash) {
-      throw new Error('Could not find the account ' + accountId)
-    }
 
     await duplexCall.requests.send({
       operation: SetUsersRequest_Operation.Delete,
@@ -123,51 +77,33 @@ export class APIClient extends DBClient {
     await duplexCall.requests.complete()
 
     await duplexCall.status
-
-    accountIdToPasswordHashMap.delete(accountId)
-    passwordHashToAccountMap.delete(passwordHash)
-
-    return { type: ECommand.Delete, accountId }
   }
 
-  public async changePassword(
-    accountId: number,
-    passwordHash: string,
-  ): Promise<ChangePasswordResult> {
-    await this.removeAccount(accountId)
-    await this.addAccount(accountId, passwordHash)
-
-    return {
-      type: ECommand.ChangePassword,
-      accountId,
-      password: passwordHash,
-    }
-  }
-
-  public async getFlow(options: { clear?: boolean } = {}): Promise<FlowResult> {
+  public async getFlow(options: { clear?: boolean } = {}): Promise<
+    Array<{
+      passwordHash: string
+      flow: number
+    }>
+  > {
     const streamingCall = this.cl.listUsers({})
     const accounts: Array<{
-      accountId: number
+      passwordHash: string
       flow: number
     }> = []
 
     for await (const user of streamingCall.responses) {
       const { status } = user
-      const hash = status?.user?.hash
+      const passwordHash = status?.user?.hash
       const upload = status?.trafficTotal?.uploadTraffic
       const download = status?.trafficTotal?.downloadTraffic
 
-      if (!hash) continue
-
-      const account = passwordHashToAccountMap.get(hash)
-
-      if (!account) continue
+      if (!passwordHash) continue
 
       const uploadInNumber = upload ? Number(upload) : 0
       const downloadInNumber = download ? Number(download) : 0
 
       accounts.push({
-        accountId: account.accountId,
+        passwordHash,
         flow: downloadInNumber + uploadInNumber,
       })
 
@@ -180,8 +116,8 @@ export class APIClient extends DBClient {
             ipLimit: 0,
             ipCurrent: 0,
             user: {
+              hash: passwordHash,
               password: '',
-              hash,
             },
             trafficTotal: {
               uploadTraffic: 0n,
@@ -198,7 +134,7 @@ export class APIClient extends DBClient {
 
     await streamingCall.status
 
-    return { type: ECommand.Flow, data: accounts }
+    return accounts
   }
 
   public disconnect(): void {

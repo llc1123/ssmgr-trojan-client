@@ -66,4 +66,16 @@ const parseConfig = (): Config => {
   }
 }
 
-export { Config, parseConfig }
+const getConfig = (() => {
+  let config: Config | undefined
+
+  return (): Config => {
+    if (!config) {
+      config = parseConfig()
+    }
+
+    return config
+  }
+})()
+
+export { Config, parseConfig, getConfig }

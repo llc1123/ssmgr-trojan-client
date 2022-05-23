@@ -3,8 +3,6 @@ import os from 'os'
 import { join } from 'path'
 import { trojanLogger } from '../logger'
 
-trojanLogger.level = 'debug'
-
 export const startTrojan = (configPath: string) => {
   const osPlatform = os.platform().toLowerCase()
 
@@ -29,6 +27,7 @@ export const startTrojan = (configPath: string) => {
         .split(os.EOL)
         .forEach((line: string) => {
           const log = line.trim()
+
           if (log.length > 0) {
             if (log.includes('[FATAL]') || log.includes('[ERROR]')) {
               trojanLogger.error(log)
@@ -38,6 +37,10 @@ export const startTrojan = (configPath: string) => {
               trojanLogger.info(log)
             } else {
               trojanLogger.debug(log)
+            }
+
+            if (log.includes('api service is listening')) {
+              trojanProcess.emit('api-service-ready', {})
             }
           }
         })

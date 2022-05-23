@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "npm run clean && npm run ts:build -- --watch",
-    "build": "run-s clean protos:build && tsc",
+    "build": "run-s clean protos:build ts:build",
     "lint": "eslint src --ext .ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "ts:build": "tsc",
@@ -22,7 +22,7 @@
   },
   "author": "Roy Li<me@royli.dev>",
   "license": "MIT",
-  "repository": "https://github.com/llc1123/ssmgr-trojan-client",
+  "repository": "https://github.com/geekdada/ssmgr-trojan-client",
   "dependencies": {
     "@grpc/grpc-js": "^1.5.10",
     "@protobuf-ts/grpc-transport": "^2.4.0",
@@ -36,6 +36,8 @@
     "fs-extra": "^10.1.0",
     "log4js": "^6.4.4",
     "rimraf": "^3.0.2",
+    "sequelize": "^6.19.2",
+    "sqlite3": "^5.0.8",
     "yaml": "^2.1.0",
     "zx": "^6.1.0"
   },

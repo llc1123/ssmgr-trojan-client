@@ -38,7 +38,7 @@ export interface VersionResult {
   version: Version
 }
 
-export type DBClientResult =
+export type APIClientResult =
   | ListResult
   | AddResult
   | RemoveResult
