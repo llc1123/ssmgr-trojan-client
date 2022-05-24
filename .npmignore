@@ -10,3 +10,4 @@ protos/
 /*.sqlite
 /tsconfig.json
 /Dockerfile
+/bin/trojan-go
