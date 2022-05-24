@@ -5,7 +5,7 @@ dist/
 
 .DS_Store
 
-src/protobuf/**/*
+src/protobuf/*.ts
 bin/trojan-go
 
-db.sqlite
+/*.sqlite
