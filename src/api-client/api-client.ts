@@ -32,7 +32,11 @@ export class APIClient {
     setInterval(() => {
       this.onTick().catch((err) => {
         if (err instanceof Error) {
-          onTickError(err)
+          try {
+            onTickError(err)
+          } catch (_) {
+            // ignore
+          }
         }
       })
     }, 60 * 1000)
@@ -160,17 +164,23 @@ export class APIClient {
       }
     }
 
-    await Flow.bulkCreate(flowsToAdd)
-    await this.trojanManager.clearFlow(
-      accountFlows.map((flow) => flow.passwordHash),
+    const jobs = []
+
+    jobs.push(Flow.bulkCreate(flowsToAdd))
+    jobs.push(
+      this.trojanManager.clearFlow(
+        accountFlows.map((flow) => flow.passwordHash),
+      ),
     )
 
     if (passwordsToAdd.length) {
-      await this.trojanManager.addAccount(passwordsToAdd)
+      jobs.push(this.trojanManager.addAccount(passwordsToAdd))
     }
 
     if (existingPasswords.length) {
-      await this.trojanManager.removeAccount(existingPasswords)
+      jobs.push(this.trojanManager.removeAccount(existingPasswords))
     }
+
+    await Promise.all(jobs)
   }
 }

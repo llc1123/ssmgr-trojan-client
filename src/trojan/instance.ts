@@ -39,8 +39,10 @@ export const startTrojan = (configPath: string) => {
               trojanLogger.debug(log)
             }
 
-            if (log.includes('api service is listening')) {
-              trojanProcess.emit('api-service-ready', {})
+            if (log.includes('initializing')) {
+              setTimeout(() => {
+                trojanProcess.emit('api-service-ready', {})
+              }, 500)
             }
           }
         })
