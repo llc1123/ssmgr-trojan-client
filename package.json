@@ -5,6 +5,11 @@
   "bin": {
     "ssmgr-trojan-client": "./bin/ssmgr-trojan-client"
   },
+  "keywords": [
+    "ssmgr",
+    "shadowsocks-manager",
+    "trojan-go"
+  ],
   "scripts": {
     "dev": "npm run clean && npm run ts:build -- --watch",
     "build": "run-s clean protos:build ts:build",
