@@ -2,40 +2,55 @@ import {
   Model,
   InferAttributes,
   InferCreationAttributes,
-  CreationOptional,
   DataTypes,
+  NonAttribute,
+  CreationOptional,
+  Association,
 } from 'sequelize'
 
 import { getDatabase } from '../db'
+import { Flow } from './flow'
 
 const sequelize = getDatabase()
 
-export class Account extends Model<
+class Account extends Model<
   InferAttributes<Account>,
   InferCreationAttributes<Account>
 > {
-  // 'CreationOptional' is a special type that marks the field as optional
-  // when creating an instance of the model (such as using Model.create()).
-  declare id: CreationOptional<number>
-  declare accountId: number
+  declare id: number
   declare password: string
+
+  declare flows?: NonAttribute<Flow[]>
+
+  // createdAt can be undefined during creation
+  declare createdAt: CreationOptional<Date>
+  // updatedAt can be undefined during creation
+  declare updatedAt: CreationOptional<Date>
+
+  get accountId(): NonAttribute<number> {
+    return this.id
+  }
+
+  declare static associations: {
+    flows: Association<Account, Flow>
+  }
 }
 
 Account.init(
   {
     id: {
       type: DataTypes.INTEGER,
-      autoIncrement: true,
-    },
-    accountId: {
-      type: DataTypes.INTEGER,
+      autoIncrement: false,
       primaryKey: true,
-      allowNull: false,
     },
     password: {
       type: DataTypes.STRING,
       allowNull: false,
     },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
   },
   { sequelize, tableName: 'accounts' },
 )
+
+export { Account }

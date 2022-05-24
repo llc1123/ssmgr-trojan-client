@@ -1,4 +1,5 @@
-import { Account } from '../models'
+import { Op } from 'sequelize'
+import { Account, Flow } from '../models'
 import { ECommand } from '../types'
 import {
   AddResult,
@@ -48,8 +49,8 @@ export class APIClient {
     passwordHash: string,
   ): Promise<AddResult> {
     await Account.findOrCreate({
-      where: { accountId },
-      defaults: { accountId, password: passwordHash },
+      where: { id: accountId },
+      defaults: { id: accountId, password: passwordHash },
     })
 
     return { type: ECommand.Add, accountId }
@@ -58,7 +59,7 @@ export class APIClient {
   public async removeAccount(accountId: number): Promise<RemoveResult> {
     await Account.destroy({
       where: {
-        accountId,
+        id: accountId,
       },
     })
 
@@ -79,23 +80,47 @@ export class APIClient {
     }
   }
 
-  public async getFlow(options: { clear?: boolean } = {}): Promise<FlowResult> {
-    const accountFlows = await this.trojanManager.getFlow(options)
-    const results = []
-
-    for await (const flow of accountFlows) {
-      const account = await Account.findOne({
-        where: {
-          password: flow.passwordHash,
+  public async getFlow(
+    options: { clear?: boolean; startTime?: number; endTime?: number } = {},
+  ): Promise<FlowResult> {
+    const startTime = options.startTime || 0
+    const endTime = options.endTime || Date.now()
+    const accountFlows = await Account.findAll({
+      include: [
+        {
+          association: Account.associations.flows,
+          where: {
+            createdAt: {
+              [Op.between]: [startTime, endTime],
+            },
+          },
         },
-      })
+      ],
+    })
+    const results = accountFlows.map((account) => {
+      const flows = account.flows
+      let flow = 0
 
-      if (account) {
-        results.push({
-          accountId: account.accountId,
-          flow: flow.flow,
+      if (flows) {
+        flows.forEach((f) => {
+          flow += f.flow
         })
       }
+
+      return {
+        accountId: account.id,
+        flow,
+      }
+    })
+
+    if (options.clear) {
+      await Flow.destroy({
+        where: {
+          createdAt: {
+            [Op.between]: [startTime, endTime],
+          },
+        },
+      })
     }
 
     return { type: ECommand.Flow, data: results }
@@ -106,26 +131,46 @@ export class APIClient {
   }
 
   private async onTick(): Promise<void> {
-    const [accounts, existingPasswords] = await Promise.all([
+    const [accounts, accountFlows, existingPasswords] = await Promise.all([
       Account.findAll(),
+      this.trojanManager.getFlow(),
       this.trojanManager.listAccounts(),
     ])
+    const passwordsToAdd = []
+    const flowsToAdd = []
 
     for await (const account of accounts) {
       const { password } = account
       const existingPasswordIndex = existingPasswords.findIndex(
         (existingPassword: string) => existingPassword === password,
       )
+      const flows = accountFlows
+        .filter((flow) => flow.passwordHash === account.password)
+        .map((flow) => ({
+          accountId: account.id,
+          flow: flow.flow,
+        }))
+
+      flowsToAdd.push(...flows)
 
       if (existingPasswordIndex > -1) {
         existingPasswords.splice(existingPasswordIndex, 1)
       } else {
-        await this.trojanManager.addAccount(password)
+        passwordsToAdd.push(password)
       }
     }
 
-    for await (const password of existingPasswords) {
-      await this.trojanManager.removeAccount(password)
+    await Flow.bulkCreate(flowsToAdd)
+    await this.trojanManager.clearFlow(
+      accountFlows.map((flow) => flow.passwordHash),
+    )
+
+    if (passwordsToAdd.length) {
+      await this.trojanManager.addAccount(passwordsToAdd)
+    }
+
+    if (existingPasswords.length) {
+      await this.trojanManager.removeAccount(existingPasswords)
     }
   }
 }

@@ -39,47 +39,51 @@ export class TrojanManager {
     return accounts
   }
 
-  public async addAccount(passwordHash: string): Promise<void> {
+  public async addAccount(passwordHashList: string[]): Promise<void> {
     const duplexCall = this.cl.setUsers()
 
-    await duplexCall.requests.send({
-      operation: SetUsersRequest_Operation.Add,
-      status: {
-        ipLimit: 0,
-        ipCurrent: 0,
-        user: {
-          hash: passwordHash,
-          password: '',
+    for await (const passwordHash of passwordHashList) {
+      await duplexCall.requests.send({
+        operation: SetUsersRequest_Operation.Add,
+        status: {
+          ipLimit: 0,
+          ipCurrent: 0,
+          user: {
+            hash: passwordHash,
+            password: '',
+          },
         },
-      },
-    })
+      })
+    }
 
     await duplexCall.requests.complete()
 
     await duplexCall.status
   }
 
-  public async removeAccount(passwordHash: string): Promise<void> {
+  public async removeAccount(passwordHashList: string[]): Promise<void> {
     const duplexCall = this.cl.setUsers()
 
-    await duplexCall.requests.send({
-      operation: SetUsersRequest_Operation.Delete,
-      status: {
-        ipLimit: 0,
-        ipCurrent: 0,
-        user: {
-          hash: passwordHash,
-          password: '',
+    for await (const passwordHash of passwordHashList) {
+      await duplexCall.requests.send({
+        operation: SetUsersRequest_Operation.Delete,
+        status: {
+          ipLimit: 0,
+          ipCurrent: 0,
+          user: {
+            hash: passwordHash,
+            password: '',
+          },
         },
-      },
-    })
+      })
+    }
 
     await duplexCall.requests.complete()
 
     await duplexCall.status
   }
 
-  public async getFlow(options: { clear?: boolean } = {}): Promise<
+  public async getFlow(): Promise<
     Array<{
       passwordHash: string
       flow: number
@@ -106,35 +110,37 @@ export class TrojanManager {
         passwordHash,
         flow: downloadInNumber + uploadInNumber,
       })
-
-      if (options.clear) {
-        const setUserCall = this.cl.setUsers()
-
-        await setUserCall.requests.send({
-          operation: SetUsersRequest_Operation.Modify,
-          status: {
-            ipLimit: 0,
-            ipCurrent: 0,
-            user: {
-              hash: passwordHash,
-              password: '',
-            },
-            trafficTotal: {
-              uploadTraffic: 0n,
-              downloadTraffic: 0n,
-            },
-          },
-        })
-
-        await setUserCall.requests.complete()
-
-        await setUserCall.status
-      }
     }
 
     await streamingCall.status
 
     return accounts
+  }
+
+  public async clearFlow(passwordHashList: string[]): Promise<void> {
+    const setUserCall = this.cl.setUsers()
+
+    for await (const passwordHash of passwordHashList) {
+      await setUserCall.requests.send({
+        operation: SetUsersRequest_Operation.Modify,
+        status: {
+          ipLimit: 0,
+          ipCurrent: 0,
+          user: {
+            hash: passwordHash,
+            password: '',
+          },
+          trafficTotal: {
+            uploadTraffic: 0n,
+            downloadTraffic: 0n,
+          },
+        },
+      })
+    }
+
+    await setUserCall.requests.complete()
+
+    await setUserCall.status
   }
 
   public disconnect(): void {
