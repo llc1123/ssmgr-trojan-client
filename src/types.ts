@@ -53,4 +53,5 @@ export interface Config {
   apiHost: string
   apiPort: number
   trojanConfig?: string
+  fakeWebsite?: string
 }

@@ -9,7 +9,7 @@ import type { APIClient, APIClientResult } from './api-client'
 import { logger } from './logger'
 import Sentry from './sentry'
 import { checkCode, pack } from './socket'
-import { startTrojan } from './trojan'
+import { startFakeWebsite, startTrojan } from './trojan'
 import {
   CommandMessage,
   ECommand,
@@ -25,6 +25,7 @@ import './models'
 let config: Config
 let trojanClient: APIClient
 let trojanProcess: ExecaChildProcess | null = null
+let fakeWebsiteProcess: ExecaChildProcess | null = null
 
 /**
  * https://shadowsocks.github.io/shadowsocks-manager/#/ssmgrapi
@@ -187,6 +188,7 @@ const server = createServer((socket: Socket) => {
     return scope
   })
   logger.error('TCP server error: ', err.message)
+  throw err
 })
 
 const startServer = async (): Promise<void> => {
@@ -210,12 +212,14 @@ const startServer = async (): Promise<void> => {
     trojanProcess = startTrojan(config.trojanConfig)
 
     trojanProcess.on('exit', (code) => {
-      if (code === 1) {
-        logger.error(`trojan-go process exited with code ${code}`)
-        trojanClient.disconnect()
-        server.close()
+      trojanProcess = null
 
-        process.exit(1)
+      if (code) {
+        throw new Error(
+          `trojan-go process exited unexpectedly with code ${code}`,
+        )
+      } else {
+        throw new Error(`trojan-go process exited unexpectedly`)
       }
     })
 
@@ -255,6 +259,26 @@ const startServer = async (): Promise<void> => {
     })
   }
 
+  if (config.fakeWebsite) {
+    logger.info(
+      'Initializing the fake website, listening on ' + config.fakeWebsite,
+    )
+
+    fakeWebsiteProcess = startFakeWebsite(config.fakeWebsite)
+
+    fakeWebsiteProcess.on('exit', (code) => {
+      fakeWebsiteProcess = null
+
+      if (code) {
+        throw new Error(
+          `Fake website process exited unexpectedly with code ${code}`,
+        )
+      } else {
+        throw new Error(`Fake website process exited unexpectedly`)
+      }
+    })
+  }
+
   server.listen(config.port, config.addr, () => {
     logger.info(`Listening on ${config.addr}:${config.port}`)
   })
@@ -276,10 +300,13 @@ startServer().catch((e) => {
   process.exit(1)
 })
 
-onDeath({ uncaughtException: true })((signal) => {
+onDeath({ uncaughtException: true })((signal, err) => {
   if (signal instanceof Error) {
     logger.error(signal)
     logger.error('An uncaught error occurred. Terminating the service...')
+  } else if (signal === ('uncaughtException' as any) && err) {
+    logger.error(err)
+    logger.error(`Received uncaughtException. Terminating the service...`)
   } else {
     logger.info(`Received ${signal}. Terminating the service...`)
   }
@@ -287,6 +314,9 @@ onDeath({ uncaughtException: true })((signal) => {
   trojanClient.disconnect()
   if (trojanProcess) {
     trojanProcess.kill(0)
+  }
+  if (fakeWebsiteProcess) {
+    fakeWebsiteProcess.kill(0)
   }
   server.close()
   getDatabase()

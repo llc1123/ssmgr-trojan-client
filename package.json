@@ -13,7 +13,7 @@
   "scripts": {
     "dev": "npm run clean && npm run ts:build -- --watch",
     "build": "run-s clean protos:build ts:build",
-    "lint": "eslint src --ext .ts",
+    "lint": "eslint src --ext .ts,.js,.mjs",
     "test": "echo \"Error: no test specified\" && exit 1",
     "ts:build": "tsc",
     "protos:update": "zx ./scripts/update-protos.mjs",
@@ -43,6 +43,7 @@
     "npm-run-all": "^4.1.5",
     "rimraf": "^3.0.2",
     "sequelize": "^6.19.2",
+    "serve-handler": "^6.1.3",
     "sqlite3": "^5.0.8",
     "yaml": "^2.1.0",
     "zx": "^6.1.0"
@@ -51,6 +52,7 @@
     "@types/death": "^1.1.2",
     "@types/ioredis": "^4.28.10",
     "@types/node": "^16",
+    "@types/serve-handler": "^6.1.1",
     "@typescript-eslint/eslint-plugin": "^5.17.0",
     "@typescript-eslint/parser": "^5.17.0",
     "eslint": "^8.12.0",
