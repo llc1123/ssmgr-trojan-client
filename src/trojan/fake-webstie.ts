@@ -11,7 +11,7 @@ export const startFakeWebsite = (bindAddress: string) => {
   })
 
   fakeWebsiteProcess.on('error', (error: Error) => {
-    logger.error(error)
+    logger.error(error.message)
     fakeWebsiteProcess.kill(1)
   })
 

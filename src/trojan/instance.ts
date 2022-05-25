@@ -1,6 +1,7 @@
 import execa from 'execa'
 import os from 'os'
 import { join } from 'path'
+
 import { trojanLogger } from '../logger'
 
 export const startTrojan = (configPath: string) => {

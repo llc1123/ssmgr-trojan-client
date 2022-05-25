@@ -6,7 +6,7 @@ import { Config, getConfig } from './config'
 import { getDatabase } from './db'
 import { getClient } from './api-client'
 import type { APIClient, APIClientResult } from './api-client'
-import { logger } from './logger'
+import { logger, trojanLogger } from './logger'
 import Sentry from './sentry'
 import { checkCode, pack } from './socket'
 import { startFakeWebsite, startTrojan } from './trojan'
@@ -211,15 +211,27 @@ const startServer = async (): Promise<void> => {
   if (config.trojanConfig) {
     trojanProcess = startTrojan(config.trojanConfig)
 
+    trojanProcess.on('error', (error: Error) => {
+      trojanLogger.error(error.message)
+      Sentry.captureException(error, (scope) => {
+        scope.setTags({
+          phase: 'trojan:error',
+        })
+        return scope
+      })
+
+      if (trojanProcess) {
+        trojanProcess.kill(1)
+      }
+    })
+
     trojanProcess.on('exit', (code) => {
       trojanProcess = null
 
-      if (code) {
+      if (code && code > 0) {
         throw new Error(
           `trojan-go process exited unexpectedly with code ${code}`,
         )
-      } else {
-        throw new Error(`trojan-go process exited unexpectedly`)
       }
     })
 
@@ -269,12 +281,10 @@ const startServer = async (): Promise<void> => {
     fakeWebsiteProcess.on('exit', (code) => {
       fakeWebsiteProcess = null
 
-      if (code) {
+      if (code && code > 0) {
         throw new Error(
           `Fake website process exited unexpectedly with code ${code}`,
         )
-      } else {
-        throw new Error(`Fake website process exited unexpectedly`)
       }
     })
   }
