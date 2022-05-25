@@ -10,8 +10,8 @@ const parseConfig = (): Config => {
 
   program
     .option(
-      '-l, --listen-address <addr:port>',
-      'listening address for this client (default: 0.0.0.0:4001)',
+      '-l, --listen-address [addr:port]',
+      'listening address for this client',
       '0.0.0.0:4001',
     )
     .requiredOption('-k, --key <password>', 'ssmgr client password')
@@ -19,7 +19,7 @@ const parseConfig = (): Config => {
     .option('--trojan-config <path>', 'trojan-go config file path')
     .option(
       '--fake-website [addr:port]',
-      'run a fake website on address [addr:port] (default: 127.0.0.1:4002)',
+      'run a fake website on address [addr:port], default to "127.0.0.1:4002" if not specified',
     )
     .option('-d, --debug', 'verbose output for debugging (default: false)')
     .parse(process.argv)

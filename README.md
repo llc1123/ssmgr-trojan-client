@@ -28,10 +28,11 @@ npm -g i @royli/ssmgr-trojan-client
 Usage: ssmgr-trojan-client [options]
 
 Options:
-  -l, --listen-address <addr:port>  listening address for this client (default: 0.0.0.0:4001) (default: "0.0.0.0:4001")
+  -l, --listen-address [addr:port]  listening address for this client (default: "0.0.0.0:4001")
   -k, --key <password>              ssmgr client password
   --api <addr:port>                 trojan-go API address
   --trojan-config <path>            trojan-go config file path
+  --fake-website [addr:port]        run a fake website on address [addr:port], default to "127.0.0.1:4002" if not specified
   -d, --debug                       verbose output for debugging (default: false)
   -h, --help                        display help for command
 ```
@@ -40,17 +41,24 @@ Options:
 
 ### Run the client in standalone mode
 ```bash
-ssmgr-trojan-client -l <addr:port> -k <password> --api <addr:port>
+ssmgr-trojan-client -l [addr:port] -k <password> --api <addr:port>
 ```
 
 You need to run trojan-go separately in this mode.
 
 ### Run the client with a builtin trojan-go instance
 ```bash
-ssmgr-trojan-client -l <addr:port> -k <password> --trojan-config <path>
+ssmgr-trojan-client -l [addr:port] -k <password> --trojan-config <path>
 ```
 
 A builtin trojan-go instance (latest version) will be started automatically using the configuration provided (please make sure the API feature is enabled).
+
+### Run a fake website alongside the client
+```bash
+ssmgr-trojan-client -l [addr:port] -k <password> --trojan-config <path> --fake-website
+```
+
+A fake website will be started alongside the client, which can be used by trojan-go. The default listening address is `127.0.0.1:4002`.
 
 ## License
 
