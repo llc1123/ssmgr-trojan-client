@@ -1,3 +1,4 @@
+import 'source-map-support/register'
 import onDeath from 'death'
 import { ExecaChildProcess } from 'execa'
 import { createServer, Socket } from 'net'
