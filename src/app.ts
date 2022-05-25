@@ -209,6 +209,26 @@ const startServer = async (): Promise<void> => {
 
   trojanClient = await getClient(config)
 
+  if (config.fakeWebsite) {
+    logger.info(
+      'Initializing the fake website, listening on ' + config.fakeWebsite,
+    )
+
+    fakeWebsiteProcess = startFakeWebsite(config.fakeWebsite)
+
+    fakeWebsiteProcess.on('exit', (code) => {
+      fakeWebsiteProcess = null
+
+      if (code && code > 0) {
+        throw new Error(
+          `Fake website process exited unexpectedly with code ${code}`,
+        )
+      }
+    })
+
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+  }
+
   if (config.trojanConfig) {
     trojanProcess = startTrojan(config.trojanConfig)
 
@@ -272,26 +292,8 @@ const startServer = async (): Promise<void> => {
     })
   }
 
-  if (config.fakeWebsite) {
-    logger.info(
-      'Initializing the fake website, listening on ' + config.fakeWebsite,
-    )
-
-    fakeWebsiteProcess = startFakeWebsite(config.fakeWebsite)
-
-    fakeWebsiteProcess.on('exit', (code) => {
-      fakeWebsiteProcess = null
-
-      if (code && code > 0) {
-        throw new Error(
-          `Fake website process exited unexpectedly with code ${code}`,
-        )
-      }
-    })
-  }
-
   server.listen(config.port, config.addr, () => {
-    logger.info(`Listening on ${config.addr}:${config.port}`)
+    logger.info(`Client is listening on ${config.addr}:${config.port}`)
   })
 }
 
