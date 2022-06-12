@@ -11,8 +11,10 @@ import {
   UserIdPwd,
   ParsedResult,
 } from './types'
-import { version } from './version'
 import { DBClientResult } from './db-client/types'
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { version } = require('../package.json')
 
 let config: Config
 let dbClient: DBClient
@@ -158,10 +160,12 @@ const checkData = async (receive: ReceiveData): Promise<void> => {
       const result = parseResult(await receiveCommand(data))
       receive.socket.end(pack({ code: 0, data: result }))
     } catch (err) {
-      logger.error(err.message)
-      receive.socket.end(
-        pack({ code: err.message === 'Invalid command' ? 1 : -1 }),
-      )
+      if (err instanceof Error) {
+        logger.error(err.message)
+        receive.socket.end(
+          pack({ code: err.message === 'Invalid command' ? 1 : -1 }),
+        )
+      }
     }
     if (buffer.length > length + 2) {
       checkData(receive)

@@ -30,7 +30,7 @@ const initDB = async (config: Config): Promise<DBClient> => {
   switch (config.dbType) {
     case EDbType.Redis:
       try {
-        const Redis = await import('ioredis')
+        const Redis = (await import('ioredis')).default
         const { RedisClient } = await import('./redis')
         const cl = new RedisClient(
           new Redis({
@@ -44,15 +44,17 @@ const initDB = async (config: Config): Promise<DBClient> => {
         )
         return cl
       } catch (e) {
-        logger.error(e.message)
+        if (e instanceof Error) {
+          logger.error(e.message)
+        }
         throw new Error()
       }
     case EDbType.MySQL:
       try {
-        const MySQL = await import('promise-mysql')
+        const { createConnection } = await import('promise-mysql')
         const { MySQLClient } = await import('./mysql')
         const cl = new MySQLClient(
-          await MySQL.createConnection({
+          await createConnection({
             host: config.dbAddr,
             port: config.dbPort,
             user: config.dbUser,
@@ -66,7 +68,9 @@ const initDB = async (config: Config): Promise<DBClient> => {
         )
         return cl
       } catch (e) {
-        logger.error(e.message)
+        if (e instanceof Error) {
+          logger.error(e.message)
+        }
         throw new Error()
       }
     default:

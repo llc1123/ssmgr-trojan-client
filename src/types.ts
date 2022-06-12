@@ -1,5 +1,4 @@
 import { Socket } from 'net'
-import { Version } from './version'
 import { EDbType } from './db-client/types'
 
 export enum ECommand {
@@ -30,7 +29,7 @@ export interface UserData {
 }
 
 export interface ParsedVersion {
-  version: Version
+  version: string
 }
 
 export type ParsedResult = UserId | UserIdPwd[] | UserFlow[] | ParsedVersion

@@ -1,10 +1,20 @@
 {
   "compilerOptions": {
-    "target": "ES2019",
-    "module": "CommonJS",
-    "allowJs": false,
-    "outDir": "./dist",
+    "target": "ES2021",
+    "lib": [
+      "ES2021"
+    ],
+    "skipLibCheck": true,
+    "esModuleInterop": true,
     "strict": true,
-    "forceConsistentCasingInFileNames": true
-  }
+    "forceConsistentCasingInFileNames": true,
+    "module": "commonjs",
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "removeComments": true,
+    "outDir": "dist"
+  },
+  "include": [
+    "src"
+  ]
 }

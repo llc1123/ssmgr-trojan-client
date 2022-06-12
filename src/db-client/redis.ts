@@ -24,14 +24,17 @@ class RedisClient extends DBClient {
       accounts.forEach((acct) => {
         pipe = pipe.get(acct)
       })
-      const result = (await pipe.exec()).map((item, idx) => ({
-        id: parseInt(accounts[idx].slice(5), 10),
-        password: item[1] || '',
-      }))
+      const result =
+        (await pipe.exec())?.map((item, idx) => ({
+          id: parseInt(accounts[idx].slice(5), 10),
+          password: (item[1] as string) || '',
+        })) ?? []
       logger.debug('List: ' + JSON.stringify(result))
       return { type: ECommand.List, data: result }
     } catch (e) {
-      throw new Error("Query error on 'list': " + e.message)
+      throw new Error(
+        `Query error on 'list': ${e instanceof Error ? e.message : e}`,
+      )
     }
   }
 
@@ -68,7 +71,9 @@ class RedisClient extends DBClient {
       logger.debug(`Added user: ${acctId}`)
       return { type: ECommand.Add, id: acctId }
     } catch (e) {
-      throw new Error("Query error on 'add': " + e.message)
+      throw new Error(
+        `Query error on 'add': ${e instanceof Error ? e.message : e}`,
+      )
     }
   }
 
@@ -87,7 +92,9 @@ class RedisClient extends DBClient {
       logger.debug(`Removed user: ${acctId}`)
       return { type: ECommand.Delete, id: acctId }
     } catch (e) {
-      throw new Error("Query error on 'del': " + e.message)
+      throw new Error(
+        `Query error on 'del': ${e instanceof Error ? e.message : e}`,
+      )
     }
   }
 
@@ -100,13 +107,13 @@ class RedisClient extends DBClient {
             const key = await this.cl.get(user)
             let flow = 0
             if (key) {
-              const [dl, ul]: string[] = (
+              const [dl, ul]: [string, string] = (
                 await this.cl
                   .multi()
                   .hmget(key, 'download', 'upload')
                   .hmset(key, 'download', '0', 'upload', '0')
                   .exec()
-              )[0][1]
+              )?.[0][1] as [string, string]
               flow = parseInt(dl, 10) + parseInt(ul, 10)
             }
             return {
@@ -119,7 +126,9 @@ class RedisClient extends DBClient {
       logger.debug('Flow: ' + JSON.stringify(result))
       return { type: ECommand.Flow, data: result }
     } catch (e) {
-      throw new Error("Query error on 'flow': " + e.message)
+      throw new Error(
+        `Query error on 'flow': ${e instanceof Error ? e.message : e}`,
+      )
     }
   }
 

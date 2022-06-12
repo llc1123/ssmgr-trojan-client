@@ -1,5 +1,4 @@
 import { ECommand } from '../types'
-import { Version } from '../version'
 
 export enum EDbType {
   Redis = 'redis',
@@ -34,7 +33,7 @@ export interface FlowResult {
 
 export interface VersionResult {
   type: typeof ECommand.Version
-  version: Version
+  version: string
 }
 
 export type DBClientResult =
