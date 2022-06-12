@@ -17,4 +17,4 @@ RUN pnpm install --offline --prod
 
 ENV LISTEN_ADDR="0.0.0.0:4001" KEY=""
 
-CMD ssmgr-trojan-client -l ${LISTEN_ADDR} -k ${KEY:-$(hostname)}
+CMD node dist/app.js -l ${LISTEN_ADDR} -k ${KEY:-$(hostname)}
