@@ -17,7 +17,7 @@
   "license": "MIT",
   "repository": "https://github.com/llc1123/ssmgr-trojan-client",
   "dependencies": {
-    "commander": "^9.4.0",
+    "commander": "^10.0.0",
     "ioredis": "^5.2.2",
     "log4js": "^6.6.1",
     "promise-mysql": "^5.2.0"
